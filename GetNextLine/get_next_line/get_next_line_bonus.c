@@ -1,29 +1,29 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*   get_next_line_bonus.c                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: hiden <hiden@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/03/06 13:11:50 by hiden             #+#    #+#             */
+/*   Created: 2026/04/16 00:00:00 by hiden             #+#    #+#             */
 /*   Updated: 2026/04/16 00:00:00 by hiden            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "get_next_line.h"
+#include "get_next_line_bonus.h"
 
-static char	*append_buf(char *stash, char *buf)
+static char	*append_buf_b(char *stash, char *buf)
 {
 	char	*old;
 
 	old = stash;
-	stash = ft_strjoin(stash, buf);
+	stash = ft_strjoin_b(stash, buf);
 	if (old)
 		free(old);
 	return (stash);
 }
 
-char	*ft_read_stash(int fd, char *stash)
+static char	*read_stash(int fd, char *stash)
 {
 	char	*buf;
 	int		bytes;
@@ -32,13 +32,13 @@ char	*ft_read_stash(int fd, char *stash)
 	if (!buf)
 		return (NULL);
 	bytes = 1;
-	while (!ft_strchr(stash, '\n') && bytes > 0)
+	while (!ft_strchr_b(stash, '\n') && bytes > 0)
 	{
 		bytes = read(fd, buf, BUFFER_SIZE);
 		if (bytes == -1)
 			break ;
 		buf[bytes] = '\0';
-		stash = append_buf(stash, buf);
+		stash = append_buf_b(stash, buf);
 		if (!stash)
 			break ;
 	}
@@ -52,21 +52,21 @@ char	*ft_read_stash(int fd, char *stash)
 
 char	*get_next_line(int fd)
 {
-	static char	*stash;
+	static char	*stash[MAX_FD];
 	char		*line;
 
-	if (fd < 0 || BUFFER_SIZE <= 0)
+	if (fd < 0 || fd >= MAX_FD || BUFFER_SIZE <= 0)
 		return (NULL);
-	stash = ft_read_stash(fd, stash);
-	if (!stash)
+	stash[fd] = read_stash(fd, stash[fd]);
+	if (!stash[fd])
 		return (NULL);
-	if (!stash[0])
+	if (!stash[fd][0])
 	{
-		free(stash);
-		stash = NULL;
+		free(stash[fd]);
+		stash[fd] = NULL;
 		return (NULL);
 	}
-	line = ft_extract_line(stash);
-	stash = ft_update_stash(stash);
+	line = ft_extract_line_b(stash[fd]);
+	stash[fd] = ft_update_stash_b(stash[fd]);
 	return (line);
 }

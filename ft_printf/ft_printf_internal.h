@@ -1,32 +1,25 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line.h                                    :+:      :+:    :+:   */
+/*   ft_printf_internal.h                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: hiden <hiden@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/03/06 13:11:50 by hiden             #+#    #+#             */
-/*   Updated: 2026/04/16 00:00:00 by hiden            ###   ########.fr       */
+/*   Created: 2026/04/16 10:00:00 by hiden             #+#    #+#             */
+/*   Updated: 2026/04/16 10:00:00 by hiden            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef GET_NEXT_LINE_H
-# define GET_NEXT_LINE_H
+#ifndef FT_PRINTF_INTERNAL_H
+# define FT_PRINTF_INTERNAL_H
 
 # include <unistd.h>
-# include <stdlib.h>
-# include <stddef.h>
 
-# if !defined(BUFFER_SIZE) && !defined(MACROS_H)
-#  define BUFFER_SIZE 42
-# endif
-
-char	*get_next_line(int fd);
-int		ft_strchr(char *str, char c);
-char	*ft_strjoin(char *str, char *buf);
-size_t	ft_strlen(char *str);
-char	*ft_extract_line(char *stash);
-char	*ft_update_stash(char *stash);
-char	*ft_read_stash(int fd, char *stash);
+int	ft_putchar(char c);
+int	ft_putstr(char *s);
+int	ft_putnbr(int n);
+int	ft_putunbr(unsigned int n);
+int	ft_puthex(unsigned int n, int upper);
+int	ft_putptr(void *p);
 
 #endif

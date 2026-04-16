@@ -1,18 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line_utils.c                              :+:      :+:    :+:   */
+/*   get_next_line_utils_bonus.c                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: hiden <hiden@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/03/06 13:52:36 by hiden             #+#    #+#             */
+/*   Created: 2026/04/16 00:00:00 by hiden             #+#    #+#             */
 /*   Updated: 2026/04/16 00:00:00 by hiden            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "get_next_line.h"
+#include "get_next_line_bonus.h"
 
-size_t	ft_strlen(char *str)
+size_t	ft_strlen_b(char *str)
 {
 	size_t	count;
 
@@ -24,7 +24,7 @@ size_t	ft_strlen(char *str)
 	return (count);
 }
 
-int	ft_strchr(char *str, char c)
+int	ft_strchr_b(char *str, char c)
 {
 	int	i;
 
@@ -40,14 +40,14 @@ int	ft_strchr(char *str, char c)
 	return (0);
 }
 
-char	*ft_strjoin(char *str, char *buf)
+char	*ft_strjoin_b(char *str, char *buf)
 {
 	char	*join;
 	size_t	i;
 	size_t	j;
 
-	i = ft_strlen(str);
-	j = ft_strlen(buf);
+	i = ft_strlen_b(str);
+	j = ft_strlen_b(buf);
 	join = (char *)malloc(sizeof(char) * (i + j + 1));
 	if (!join)
 		return (NULL);
@@ -67,7 +67,7 @@ char	*ft_strjoin(char *str, char *buf)
 	return (join);
 }
 
-char	*ft_extract_line(char *stash)
+char	*ft_extract_line_b(char *stash)
 {
 	char	*line;
 	int		i;
@@ -94,7 +94,7 @@ char	*ft_extract_line(char *stash)
 	return (line);
 }
 
-char	*ft_update_stash(char *stash)
+char	*ft_update_stash_b(char *stash)
 {
 	char	*new_stash;
 	int		i;
@@ -109,7 +109,7 @@ char	*ft_update_stash(char *stash)
 		return (NULL);
 	}
 	i++;
-	new_stash = (char *)malloc(sizeof(char) * (ft_strlen(stash) - i + 1));
+	new_stash = (char *)malloc(sizeof(char) * (ft_strlen_b(stash) - i + 1));
 	if (!new_stash)
 	{
 		free(stash);
