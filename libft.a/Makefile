@@ -66,9 +66,6 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	ar rcs $(NAME) $(OBJS)
 
-%.o: %.c libft.h
-	$(CC) $(CFLAGS) -c $< -o $@
-
 clean:
 	rm -f $(OBJS)
 
@@ -77,4 +74,8 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+test: $(NAME)
+	$(CC) $(CFLAGS) main.c -L. -lft -o test_ft
+	./test_ft
+
+.PHONY: all clean fclean re test
