@@ -74,8 +74,8 @@ fclean: clean
 
 re: fclean all
 
-test: $(NAME)
-	$(CC) $(CFLAGS) main.c -L. -lft -o test_ft
-	./test_ft
+# test: $(NAME)
+# 	$(CC) $(CFLAGS) main.c -L. -lft -o test_ft
+# 	./test_ft
 
 .PHONY: all clean fclean re test
