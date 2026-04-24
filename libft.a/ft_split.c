@@ -66,17 +66,11 @@ static char	**ft_free_all(char **str, size_t j)
 	return (NULL);
 }
 
-char	**ft_split(char const *s, char c)
+static char	**ft_fill(char **str, const char *s, char c)
 {
-	char	**str;
 	size_t	i;
 	size_t	j;
 
-	if (!s)
-		return (NULL);
-	str = malloc(sizeof(char *) * (ft_countword(s, c) + 1));
-	if (!str)
-		return (NULL);
 	i = 0;
 	j = 0;
 	while (s[i])
@@ -95,4 +89,16 @@ char	**ft_split(char const *s, char c)
 	}
 	str[j] = NULL;
 	return (str);
+}
+
+char	**ft_split(char const *s, char c)
+{
+	char	**str;
+
+	if (!s)
+		return (NULL);
+	str = malloc(sizeof(char *) * (ft_countword(s, c) + 1));
+	if (!str)
+		return (NULL);
+	return (ft_fill(str, s, c));
 }
