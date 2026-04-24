@@ -6,7 +6,7 @@
 /*   By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/22 21:15:42 by hakuta            #+#    #+#             */
-/*   Updated: 2026/04/23 14:03:12 by hakuta           ###   ########.fr       */
+/*   Updated: 2026/04/24 11:13:30 by hakuta           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ void	*ft_calloc(size_t nmemb, size_t size)
 	if (size != 0 && nmemb > (size_t)-1 / size)
 		return (NULL);
 	total = nmemb * size;
-	if(total == 0)
+	if (total == 0)
 		ptr = malloc(1);
 	else
 		ptr = malloc(total);
