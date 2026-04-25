@@ -3,12 +3,13 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: hiden <hiden@student.42.fr>                +#+  +:+       +#+         #
+#    By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2026/04/16 00:00:00 by hiden             #+#    #+#              #
-#    Updated: 2026/04/25 00:00:00 by hiden            ###   ########.fr        #
+#    Created: 2026/04/25 12:41:44 by hakuta            #+#    #+#              #
+#    Updated: 2026/04/25 12:41:47 by hakuta           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
+
 
 NAME		= libgnl.a
 BONUS_NAME	= libgnl_bonus.a
