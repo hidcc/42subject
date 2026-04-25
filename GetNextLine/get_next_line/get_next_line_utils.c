@@ -6,80 +6,81 @@
 /*   By: hiden <hiden@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/06 13:52:36 by hiden             #+#    #+#             */
-/*   Updated: 2026/04/16 00:00:00 by hiden            ###   ########.fr       */
+/*   Updated: 2026/04/25 00:00:00 by hiden            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-size_t	ft_strlen(char *str)
+size_t	ft_strlen(const char *s)
 {
-	size_t	count;
-
-	if (!str)
-		return (0);
-	count = 0;
-	while (str[count])
-		count++;
-	return (count);
-}
-
-int	ft_strchr(char *str, char c)
-{
-	int	i;
-
-	if (!str)
-		return (0);
-	i = 0;
-	while (str[i])
-	{
-		if (str[i] == c)
-			return (1);
-		i++;
-	}
-	return (0);
-}
-
-char	*ft_strjoin(char *str, char *buf)
-{
-	char	*join;
 	size_t	i;
-	size_t	j;
 
-	i = ft_strlen(str);
-	j = ft_strlen(buf);
-	join = (char *)malloc(sizeof(char) * (i + j + 1));
-	if (!join)
-		return (NULL);
+	if (!s)
+		return (0);
 	i = 0;
-	while (str && str[i])
-	{
-		join[i] = str[i];
+	while (s[i])
 		i++;
-	}
-	j = 0;
-	while (buf[j])
-	{
-		join[i + j] = buf[j];
-		j++;
-	}
-	join[i + j] = '\0';
-	return (join);
+	return (i);
 }
 
-char	*ft_extract_line(char *stash)
+char	*ft_strchr(const char *s, int c)
+{
+	if (!s)
+		return (NULL);
+	while (*s)
+	{
+		if (*s == (char)c)
+			return ((char *)s);
+		s++;
+	}
+	if ((char)c == '\0')
+		return ((char *)s);
+	return (NULL);
+}
+
+char	*ft_strjoin_free(char *s1, const char *s2)
+{
+	size_t	a;
+	size_t	b;
+	size_t	i;
+	char	*out;
+
+	a = ft_strlen(s1);
+	b = ft_strlen(s2);
+	out = malloc(a + b + 1);
+	if (!out)
+	{
+		free(s1);
+		return (NULL);
+	}
+	i = 0;
+	while (i < a + b)
+	{
+		if (i < a)
+			out[i] = s1[i];
+		else
+			out[i] = s2[i - a];
+		i++;
+	}
+	out[a + b] = '\0';
+	free(s1);
+	return (out);
+}
+
+char	*ft_extract_line(const char *stash)
 {
 	char	*line;
-	int		i;
+	size_t	i;
 
-	if (!stash || !stash[0])
+	if (!stash || !*stash)
 		return (NULL);
 	i = 0;
 	while (stash[i] && stash[i] != '\n')
 		i++;
 	if (stash[i] == '\n')
 		i++;
-	line = (char *)malloc(sizeof(char) * (i + 1));
+	line = malloc(i + 1);
 	if (!line)
 		return (NULL);
 	i = 0;
@@ -96,9 +97,9 @@ char	*ft_extract_line(char *stash)
 
 char	*ft_update_stash(char *stash)
 {
-	char	*new_stash;
-	int		i;
-	int		j;
+	char	*rest;
+	size_t	i;
+	size_t	j;
 
 	i = 0;
 	while (stash[i] && stash[i] != '\n')
@@ -108,17 +109,17 @@ char	*ft_update_stash(char *stash)
 		free(stash);
 		return (NULL);
 	}
-	i++;
-	new_stash = (char *)malloc(sizeof(char) * (ft_strlen(stash) - i + 1));
-	if (!new_stash)
+	rest = malloc(ft_strlen(stash) - i);
+	if (!rest)
 	{
 		free(stash);
 		return (NULL);
 	}
 	j = 0;
+	i++;
 	while (stash[i])
-		new_stash[j++] = stash[i++];
-	new_stash[j] = '\0';
+		rest[j++] = stash[i++];
+	rest[j] = '\0';
 	free(stash);
-	return (new_stash);
+	return (rest);
 }

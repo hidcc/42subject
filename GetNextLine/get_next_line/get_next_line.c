@@ -6,49 +6,14 @@
 /*   By: hiden <hiden@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/06 13:11:50 by hiden             #+#    #+#             */
-/*   Updated: 2026/04/16 00:00:00 by hiden            ###   ########.fr       */
+/*   Updated: 2026/04/25 00:00:00 by hiden            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-static char	*append_buf(char *stash, char *buf)
-{
-	char	*old;
-
-	old = stash;
-	stash = ft_strjoin(stash, buf);
-	if (old)
-		free(old);
-	return (stash);
-}
-
-char	*ft_read_stash(int fd, char *stash)
-{
-	char	*buf;
-	int		bytes;
-
-	buf = (char *)malloc(BUFFER_SIZE + 1);
-	if (!buf)
-		return (NULL);
-	bytes = 1;
-	while (!ft_strchr(stash, '\n') && bytes > 0)
-	{
-		bytes = read(fd, buf, BUFFER_SIZE);
-		if (bytes == -1)
-			break ;
-		buf[bytes] = '\0';
-		stash = append_buf(stash, buf);
-		if (!stash)
-			break ;
-	}
-	free(buf);
-	if (bytes == -1 && stash)
-		free(stash);
-	if (bytes == -1)
-		return (NULL);
-	return (stash);
-}
+static char	*read_until_newline(int fd, char *stash);
+static int	read_chunk(int fd, char *buf, char **stash);
 
 char	*get_next_line(int fd)
 {
@@ -57,10 +22,8 @@ char	*get_next_line(int fd)
 
 	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
-	stash = ft_read_stash(fd, stash);
-	if (!stash)
-		return (NULL);
-	if (!stash[0])
+	stash = read_until_newline(fd, stash);
+	if (!stash || !*stash)
 	{
 		free(stash);
 		stash = NULL;
@@ -69,4 +32,40 @@ char	*get_next_line(int fd)
 	line = ft_extract_line(stash);
 	stash = ft_update_stash(stash);
 	return (line);
+}
+
+static char	*read_until_newline(int fd, char *stash)
+{
+	char	*buf;
+
+	if (stash && ft_strchr(stash, '\n'))
+		return (stash);
+	buf = malloc(BUFFER_SIZE + 1);
+	if (!buf)
+	{
+		free(stash);
+		return (NULL);
+	}
+	while (!ft_strchr(stash, '\n') && read_chunk(fd, buf, &stash))
+		;
+	free(buf);
+	return (stash);
+}
+
+static int	read_chunk(int fd, char *buf, char **stash)
+{
+	ssize_t	n;
+
+	n = read(fd, buf, BUFFER_SIZE);
+	if (n < 0)
+	{
+		free(*stash);
+		*stash = NULL;
+		return (0);
+	}
+	if (n == 0)
+		return (0);
+	buf[n] = '\0';
+	*stash = ft_strjoin_free(*stash, buf);
+	return (*stash != NULL);
 }
