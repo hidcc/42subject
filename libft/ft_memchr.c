@@ -1,28 +1,29 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_printf.h                                        :+:      :+:    :+:   */
+/*   ft_memchr.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/04/28 17:54:27 by hakuta            #+#    #+#             */
-/*   Updated: 2026/04/28 17:54:27 by hakuta           ###   ########.fr       */
+/*   Created: 2026/04/22 21:17:49 by hakuta            #+#    #+#             */
+/*   Updated: 2026/04/27 19:03:11 by hakuta           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FT_PRINTF_H
-# define FT_PRINTF_H
+#include "libft.h"
 
-# include <stdarg.h>
-# include <unistd.h>
+void	*ft_memchr(const void *s, int c, size_t n)
+{
+	size_t			i;
+	unsigned char	*ptr;
 
-int	ft_printf(const char *format, ...);
-int	ft_putchar(char c);
-int	ft_putstr(char *s);
-int	ft_putnbr(int n);
-int	ft_putunbr_base(unsigned long n, char *base);
-int	ft_putunbr(unsigned int n);
-int	ft_puthex(unsigned int n, int upper);
-int	ft_putptr(unsigned long ptr);
-
-#endif
+	ptr = (unsigned char *)s;
+	i = 0;
+	while (i < n)
+	{
+		if (ptr[i] == (unsigned char)c)
+			return (&ptr[i]);
+		i++;
+	}
+	return (NULL);
+}

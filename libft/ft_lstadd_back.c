@@ -1,28 +1,31 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_printf.h                                        :+:      :+:    :+:   */
+/*   ft_lstadd_back.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/04/28 17:54:27 by hakuta            #+#    #+#             */
-/*   Updated: 2026/04/28 17:54:27 by hakuta           ###   ########.fr       */
+/*   Created: 2026/04/22 21:16:28 by hakuta            #+#    #+#             */
+/*   Updated: 2026/04/28 13:32:43 by hakuta           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FT_PRINTF_H
-# define FT_PRINTF_H
+#include "libft.h"
 
-# include <stdarg.h>
-# include <unistd.h>
+void	ft_lstadd_back(t_list **lst, t_list *new)
+{
+	t_list	*last;
 
-int	ft_printf(const char *format, ...);
-int	ft_putchar(char c);
-int	ft_putstr(char *s);
-int	ft_putnbr(int n);
-int	ft_putunbr_base(unsigned long n, char *base);
-int	ft_putunbr(unsigned int n);
-int	ft_puthex(unsigned int n, int upper);
-int	ft_putptr(unsigned long ptr);
-
-#endif
+	if (!lst || !new)
+		return ;
+	if (!*lst)
+	{
+		*lst = new;
+		return ;
+	}
+	last = *lst;
+	while (last->next)
+		last = last->next;
+	last->next = new;
+	return ;
+}

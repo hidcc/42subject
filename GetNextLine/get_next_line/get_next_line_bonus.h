@@ -6,7 +6,7 @@
 /*   By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/25 12:41:12 by hakuta            #+#    #+#             */
-/*   Updated: 2026/04/25 12:41:13 by hakuta           ###   ########.fr       */
+/*   Updated: 2026/04/25 14:29:30 by hakuta           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@
 # endif
 
 # ifndef MAX_FD
-#  define MAX_FD 1024
+#  define MAX_FD 4096
 # endif
 
 char	*get_next_line(int fd);

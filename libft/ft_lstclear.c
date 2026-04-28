@@ -1,28 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_printf.h                                        :+:      :+:    :+:   */
+/*   ft_lstclear.c                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/04/28 17:54:27 by hakuta            #+#    #+#             */
-/*   Updated: 2026/04/28 17:54:27 by hakuta           ###   ########.fr       */
+/*   Created: 2026/04/22 21:16:36 by hakuta            #+#    #+#             */
+/*   Updated: 2026/04/28 13:34:49 by hakuta           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FT_PRINTF_H
-# define FT_PRINTF_H
+#include "libft.h"
 
-# include <stdarg.h>
-# include <unistd.h>
+void	ft_lstclear(t_list **lst, void (*del)(void *))
+{
+	t_list	*tmp;
 
-int	ft_printf(const char *format, ...);
-int	ft_putchar(char c);
-int	ft_putstr(char *s);
-int	ft_putnbr(int n);
-int	ft_putunbr_base(unsigned long n, char *base);
-int	ft_putunbr(unsigned int n);
-int	ft_puthex(unsigned int n, int upper);
-int	ft_putptr(unsigned long ptr);
-
-#endif
+	if (!lst || !del)
+		return ;
+	while (*lst)
+	{
+		tmp = (*lst)->next;
+		ft_lstdelone(*lst, del);
+		*lst = tmp;
+	}
+}

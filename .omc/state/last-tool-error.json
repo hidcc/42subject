@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd /Users/hidenori/subject/42subject/42-Cursus-Tester && make printf 2>&1 | tee /tmp/tester.out | grep -cE \\\"\\\\[92;49mP\\\\[39;49m\\\" && echo \\\"--- Totals ---\\\" && grep \\\"Total Tests\\\" /tmp/t...",
-  "error": "Exit code 1\n0",
-  "timestamp": "2026-04-16T12:16:18.851Z",
-  "retry_count": 1
-}

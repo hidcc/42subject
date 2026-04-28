@@ -6,7 +6,7 @@
 /*   By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/25 12:41:33 by hakuta            #+#    #+#             */
-/*   Updated: 2026/04/25 12:41:36 by hakuta           ###   ########.fr       */
+/*   Updated: 2026/04/25 17:18:44 by hakuta           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ static char	*read_until_newline(int fd, char *stash)
 		return (NULL);
 	}
 	while (!ft_strchr(stash, '\n') && read_chunk(fd, buf, &stash))
-		;
+		continue ;
 	free(buf);
 	return (stash);
 }
