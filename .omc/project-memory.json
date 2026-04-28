@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1776316729301,
+  "lastScanned": 1777377342960,
   "projectRoot": "/Users/hidenori/subject/42subject",
   "techStack": {
     "languages": [],
@@ -24,7 +24,9 @@
   "structure": {
     "isMonorepo": false,
     "workspaces": [],
-    "mainDirectories": [],
+    "mainDirectories": [
+      "test"
+    ],
     "gitBranches": {
       "defaultBranch": "main",
       "branchingStrategy": null
@@ -36,7 +38,7 @@
       "path": "42-Cursus-Tester",
       "purpose": null,
       "fileCount": 4,
-      "lastAccessed": 1776316729293,
+      "lastAccessed": 1777377342952,
       "keyFiles": [
         "Makefile",
         "README.md",
@@ -47,21 +49,58 @@
       "path": "GetNextLine",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1776316729293,
+      "lastAccessed": 1777377342955,
       "keyFiles": []
+    },
+    "ft_printf": {
+      "path": "ft_printf",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1777377342956,
+      "keyFiles": [
+        "Makefile",
+        "ft_printf.c",
+        "ft_printf.h",
+        "ft_printf_nbr.c",
+        "ft_printf_utils.c"
+      ]
     },
     "libft": {
       "path": "libft",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1776316729294,
+      "lastAccessed": 1777377342956,
       "keyFiles": []
+    },
+    "libft.a": {
+      "path": "libft.a",
+      "purpose": null,
+      "fileCount": 47,
+      "lastAccessed": 1777377342957,
+      "keyFiles": [
+        "Makefile",
+        "README.md",
+        "ft_atoi.c",
+        "ft_bzero.c",
+        "ft_calloc.c"
+      ]
+    },
+    "test": {
+      "path": "test",
+      "purpose": "Test files",
+      "fileCount": 3,
+      "lastAccessed": 1777377342957,
+      "keyFiles": [
+        "ftmemcpy.c",
+        "ftmemset.c",
+        "strdup.c"
+      ]
     },
     "42-Cursus-Tester/tests": {
       "path": "42-Cursus-Tester/tests",
       "purpose": "Test files",
       "fileCount": 1,
-      "lastAccessed": 1776316729294,
+      "lastAccessed": 1777377342958,
       "keyFiles": [
         "template.c"
       ]
@@ -70,7 +109,7 @@
       "path": "42-Cursus-Tester/utils",
       "purpose": "Utility functions",
       "fileCount": 11,
-      "lastAccessed": 1776316729294,
+      "lastAccessed": 1777377342959,
       "keyFiles": [
         "colomnhandler.c",
         "colourprint.c",
