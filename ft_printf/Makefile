@@ -6,11 +6,11 @@
 #    By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/04/28 17:54:13 by hakuta            #+#    #+#              #
-#    Updated: 2026/04/28 17:56:59 by hakuta           ###   ########.fr        #
+#    Updated: 2026/04/29 11:15:55 by hakuta           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-NAME		= printf.a
+NAME = libftprintf.a
 
 CC = cc
 CFLAGS = -Wall -Wextra -Werror
