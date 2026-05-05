@@ -1,22 +1,22 @@
-*This project has been created as part of the 42 curriculum by hakuta.*
+_This project has been created as part of the 42 curriculum by hakuta._
 
 # ft_printf
 
 ## Description
 
 `ft_printf` は標準ライブラリの `printf(3)` を再実装する 42 のプロジェクトです。
-C の **可変長引数 (variadic functions)** をしようして実装しています。
+C の **可変長引数 (variadic functions)** を使用して実装しています。
 
 実装している変換指定子は以下のとおりです (`cspdiuxX%`)。
 
-`%c`  1文字
-`%s`  文字列 (`NULL` のときは `(null)`)
-`%p`  `void *` を 16進で表示 (`0x` プレフィックス付)
-`%d` `%i` 10進符号付き整数
-`%u`  10進符号なし整数
-`%x`  16進小文字
-`%X`  16進大文字
-`%%`　パーセント記号
+- `%c`  1文字　　
+- `%s`  文字列 (`NULL` のときは `(null)`)　　
+- `%p`  `void *` を 16進で表示 (`0x` プレフィックス付)　　
+- `%d` `%i` 10進符号付き整数　　
+- `%u`  10進符号なし整数　　
+- `%x`  16進小文字　　
+- `%X`  16進大文字　　
+- `%%`　パーセント記号　　
 
 戻り値は **書き出したバイト数** (失敗時 `-1`) で、本家 `printf` と同じセマンティクスです。
 バッファリングは行わず、`write(2)` を直接呼びます (subject の指示)。
@@ -87,4 +87,4 @@ c=A s=hello p=(nil) d=-42 i=42 u=4294967295 x=ff X=FF %
 
 ### AI の利用について
 
-- **使ったところ**: 勉強の方針建てと復習で利用しました。
+- **使ったところ**: 勉強の方針建てと復習で利用しました。レビューの壁打ちを一問一答でしました。

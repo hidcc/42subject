@@ -6,7 +6,7 @@
 /*   By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/28 17:54:35 by hakuta            #+#    #+#             */
-/*   Updated: 2026/04/29 11:07:06 by hakuta           ###   ########.fr       */
+/*   Updated: 2026/04/29 18:25:19 by hakuta           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,9 @@ static int	print_format(char c, va_list *ap)
 		return (ft_puthex(va_arg(*ap, unsigned int), 1));
 	if (c == '%')
 		return (ft_putchar('%'));
-	if (ft_putchar('%') < 0 || ft_putchar(c) < 0)
+	if (ft_putchar('%') < 0)
+		return (-1);
+	if (ft_putchar(c) < 0)
 		return (-1);
 	return (2);
 }
@@ -59,3 +61,7 @@ int	ft_printf(const char *format, ...)
 	va_end(ap);
 	return (count);
 }
+
+printf("%d%s%d%c", a, b,c,d);
+
+int main

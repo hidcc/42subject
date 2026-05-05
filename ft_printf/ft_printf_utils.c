@@ -6,7 +6,7 @@
 /*   By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/28 17:54:41 by hakuta            #+#    #+#             */
-/*   Updated: 2026/04/29 09:14:44 by hakuta           ###   ########.fr       */
+/*   Updated: 2026/04/29 18:28:06 by hakuta           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,9 @@ int	ft_putchar(char c)
 		return (-1);
 	return (1);
 }
+
+
+
 
 int	ft_putstr(char *s)
 {

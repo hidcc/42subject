@@ -6,7 +6,7 @@
 /*   By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/28 17:54:47 by hakuta            #+#    #+#             */
-/*   Updated: 2026/04/29 10:13:40 by hakuta           ###   ########.fr       */
+/*   Updated: 2026/04/29 12:23:14 by hakuta           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,10 @@ int	ft_putunbr_base(unsigned long n, char *base)
 		return (-1);
 	return (ret + 1);
 }
+
+
+
+
 
 int	ft_putnbr(int n)
 {
@@ -70,6 +74,8 @@ int	ft_putptr(unsigned long ptr)
 	int	ret;
 	int	r2;
 
+	if (ptr == 0)
+		return (ft_putstr("(nil)"));
 	ret = ft_putstr("0x");
 	if (ret < 0)
 		return (-1);

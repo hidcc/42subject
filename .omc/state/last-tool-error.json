@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"git pull\",\"description\":\"Pull latest changes from remote\"}",
-  "error": "Exit code 1\nerror: Your local changes to the following files would be overwritten by merge:\n\t.omc/project-memory.json\n\t.omc/state/hud-state.json\n\t.omc/state/hud-stdin-cache.json\nPlease commit your changes or stash them before you merge.\nAborting\nUpdating d810328..78f9057",
-  "timestamp": "2026-04-28T14:33:10.066Z",
-  "retry_count": 1
-}
