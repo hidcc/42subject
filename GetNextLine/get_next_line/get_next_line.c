@@ -6,7 +6,7 @@
 /*   By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/25 12:41:33 by hakuta            #+#    #+#             */
-/*   Updated: 2026/04/29 23:26:11 by hakuta           ###   ########.fr       */
+/*   Updated: 2026/05/07 12:06:33 by hakuta           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,7 @@ static char	*read_until_newline(int fd, char *stash)
 {
 	char	*buf;
 
-	if (stash && ft_strchr(stash, '\n'))
+	if (stash && ft_strchr(stash, '.'))
 		return (stash);
 	buf = malloc(BUFFER_SIZE + 1);
 	if (!buf)
@@ -46,7 +46,7 @@ static char	*read_until_newline(int fd, char *stash)
 		free(stash);
 		return (NULL);
 	}
-	while (!ft_strchr(stash, '\n') && read_chunk(fd, buf, &stash))
+	while (!ft_strchr(stash, '.') && read_chunk(fd, buf, &stash))
 		continue ;
 	free(buf);
 	return (stash);

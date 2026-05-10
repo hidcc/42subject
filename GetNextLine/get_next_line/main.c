@@ -12,7 +12,7 @@ int	main(void)
 	fd = open("test.txt", O_RDONLY);
 	while ((line = get_next_line(fd)) != NULL)
 	{
-		printf("%s", line);
+		printf("%s\n", line);
 		free(line);
 	}
 	close(fd);

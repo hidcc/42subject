@@ -6,7 +6,7 @@
 /*   By: hakuta <hakuta@student.42tokyo.jp>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/25 12:41:26 by hakuta            #+#    #+#             */
-/*   Updated: 2026/04/29 23:26:02 by hakuta           ###   ########.fr       */
+/*   Updated: 2026/05/07 12:06:33 by hakuta           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,21 +76,21 @@ char	*ft_extract_line(const char *stash)
 	if (!stash || !*stash)
 		return (NULL);
 	i = 0;
-	while (stash[i] && stash[i] != '\n')
+	while (stash[i] && stash[i] != '.')
 		i++;
-	if (stash[i] == '\n')
+	if (stash[i] == '.')
 		i++;
 	line = malloc(i + 1);
 	if (!line)
 		return (NULL);
 	i = 0;
-	while (stash[i] && stash[i] != '\n')
+	while (stash[i] && stash[i] != '.')
 	{
 		line[i] = stash[i];
 		i++;
 	}
-	if (stash[i] == '\n')
-		line[i++] = '\n';
+	if (stash[i] == '.')
+		line[i++] = '.';
 	line[i] = '\0';
 	return (line);
 }
@@ -102,7 +102,7 @@ char	*ft_update_stash(char *stash)
 	size_t	j;
 
 	i = 0;
-	while (stash[i] && stash[i] != '\n')
+	while (stash[i] && stash[i] != '.')
 		i++;
 	if (!stash[i] || !stash[i + 1])
 	{
