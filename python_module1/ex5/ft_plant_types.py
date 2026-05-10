@@ -5,4 +5,4 @@ class Plant:
         height: float,
         age: int,
         growth_rate: float
-    )
+    ) -> None:
