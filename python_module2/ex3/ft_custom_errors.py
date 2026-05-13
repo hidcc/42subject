@@ -40,7 +40,7 @@ def test_custom_errors() -> None:
         check_plant("tomato")
     except GardenError as e:
         print(f"Caught GardenError: {e}")
-    
+
     try:
         check_water(0)
     except GardenError as e:
