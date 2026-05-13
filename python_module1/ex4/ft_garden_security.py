@@ -48,14 +48,14 @@ class Plant:
 
 
 if __name__ == "__main__":
-    print("=== Garde Security System ===")
+    print("=== Garden Security System ===")
     rose = Plant("Rose", 15.0, 10)
     print("Plant created: ", end="")
     rose.show()
     print()
 
     rose.set_height(25)
-    print(f"Height updated: {rose.get_height():.0f}cm")
+    print(f"Height updated: {round(rose.get_height())}cm")
     rose.set_age(30)
     print(f"Age updated: {rose.get_age()} days")
     print()

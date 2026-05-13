@@ -67,7 +67,7 @@ class Flower(Plant):
         super().show()
         print(f" Color: {self.color}")
         if self._bloomed:
-            print(f" {self.name} is blooming beautiully!")
+            print(f" {self.name} is blooming beautifully!")
         else:
             print(f" {self.name} has not bloomed yet")
 

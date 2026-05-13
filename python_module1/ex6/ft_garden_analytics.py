@@ -5,6 +5,15 @@ class Plant:
             self._age = 0
             self._show = 0
 
+        def increment_grow(self) -> None:
+            self._grow += 1
+
+        def increment_age(self) -> None:
+            self._age += 1
+
+        def increment_show(self) -> None:
+            self._show += 1
+
         def show(self) -> None:
             print(
                 f"Stats: {self._grow} grow, "
@@ -33,8 +42,11 @@ class Plant:
         self._stats = self.Stats()
 
     def show(self) -> None:
-        self._stats._show += 1
+        self._stats.increment_show()
         print(f"{self.name}: {self._height}cm, {self._age} days old")
+
+    def show_stats(self) -> None:
+        self._stats.show()
 
     def get_height(self) -> float:
         return self._height
@@ -55,11 +67,11 @@ class Plant:
         self._age = age
 
     def grow(self, days: int = 1) -> None:
-        self._stats._grow += 1
+        self._stats.increment_grow()
         self._height = round(self._height + self.growth_rate * days, 2)
 
     def age(self, days: int = 1) -> None:
-        self._stats._age += 1
+        self._stats.increment_age()
         self._age += days
 
     @staticmethod
@@ -102,6 +114,9 @@ class Tree(Plant):
             super().__init__()
             self._shade = 0
 
+        def increment_shade(self) -> None:
+            self._shade += 1
+
         def show(self) -> None:
             super().show()
             print(f" {self._shade} shade")
@@ -120,7 +135,7 @@ class Tree(Plant):
         self.trunk_diameter = float(trunk_diameter)
 
     def produce_shade(self) -> None:
-        self._stats._shade += 1
+        self._stats.increment_shade()
         print(
             f"Tree {self.name} now produces a shade of "
             f"{self._height}cm long and {self.trunk_diameter}cm wide."
@@ -181,7 +196,7 @@ class Seed(Flower):
 
 def display_stats(plant: Plant) -> None:
     print(f"[statistics for {plant.name}]")
-    plant._stats.show()
+    plant.show_stats()
 
 
 if __name__ == "__main__":
