@@ -42,10 +42,10 @@ def main() -> None:
     print(f"Only Dylan has: {diffd}")
     print()
     pool = set(ACHIEVEMENTS)
-    print(f"Alice is missing: {set.difference(pool, diffa)}")
-    print(f"Bob is missing: {set.difference(pool, diffb)}")
-    print(f"Charlie is missing: {set.difference(pool, diffc)}")
-    print(f"Dylan is missing: {set.difference(pool, diffd)}")
+    print(f"Alice is missing: {set.difference(pool, PlayerA)}")
+    print(f"Bob is missing: {set.difference(pool, PlayerB)}")
+    print(f"Charlie is missing: {set.difference(pool, PlayerC)}")
+    print(f"Dylan is missing: {set.difference(pool, PlayerD)}")
 
 
 if __name__ == "__main__":

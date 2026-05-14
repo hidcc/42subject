@@ -28,6 +28,8 @@ def main() -> None:
         print(
             f"Item {i} represents {round(inventory[i]/ total * 100, 1)}%")
     keys = list(inventory.keys())
+    if not inventory:
+        return
     most = keys[0]
     least = keys[0]
     for k in keys:

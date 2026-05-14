@@ -29,7 +29,7 @@ def main() -> None:
     for i in range(1000):
         name, action = next(g)
         print(f"Event {i}: Player {name} did action {action}")
-        events = [next(g) for _ in range(10)]
+    events = [next(g) for _ in range(10)]
     print(f"Built list of 10 events: {events}")
     for ev in consume_event(events):
         print(f"Got event from list: {ev}")

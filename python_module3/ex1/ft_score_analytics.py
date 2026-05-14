@@ -45,7 +45,9 @@ if __name__ == "__main__":
     scores = parse_scores(args)
     if not scores:
         print(
-            "No scores provided. Usage: python3 ft_score_analytics.py <score1> <score2> ...")
+            "No scores provided. "
+            "Usage: python3 ft_score_analytics.py <score1> <score2> ..."
+        )
     else:
         score_process(scores)
         total_players(scores)
