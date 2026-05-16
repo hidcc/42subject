@@ -3,7 +3,7 @@ import typing
 
 
 def file_parse(file: str) -> None:
-    f: typing.IO = open(file, "r", encoding="utf-8")
+    f: typing.IO[str] = open(file, "r", encoding="utf-8")
     print("---")
     print()
     text = f.read()
@@ -28,7 +28,7 @@ def file_parse(file: str) -> None:
         return
     print(f"Saving data to '{new_name}'")
     try:
-        out: typing.IO = open(new_name, "w", encoding="utf-8")
+        out: typing.IO[str] = open(new_name, "w", encoding="utf-8")
         out.write(represent)
         out.close()
         print(f"Data saved in file '{new_name}'.")

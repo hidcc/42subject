@@ -3,7 +3,7 @@ import typing
 
 
 def file_parse(file: str) -> None:
-    f: typing.IO = open(file, "r", encoding="utf-8")
+    f: typing.IO[str] = open(file, "r", encoding="utf-8")
     print("---")
     print()
     text = f.read()
