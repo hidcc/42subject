@@ -1,12 +1,11 @@
 from typing import Any
 from abc import ABC, abstractmethod
-import typing
 
 
 class DataProcessor(ABC):
     def __init__(self) -> None:
-        self._storage: list[tuple[int, str]] = []
-        self._counter: int = 0
+        self.storage: list[tuple[int, str]] = []
+        self.counter: int = 0
 
     @abstractmethod
     def validate(self, data: Any) -> bool:
@@ -17,9 +16,9 @@ class DataProcessor(ABC):
         pass
 
     def output(self) -> tuple[int, str]:
-        if not self._storage:
+        if not self.storage:
             raise IndexError("No data to output")
-        return self._storage.pop(0)
+        return self.storage.pop(0)
 
 
 class NumericProcessor(DataProcessor):
@@ -40,8 +39,8 @@ class NumericProcessor(DataProcessor):
             raise ValueError("Improper numeric data")
         items = data if isinstance(data, list) else [data]
         for item in items:
-            self._storage.append((self._counter, str(item)))
-            self._counter += 1
+            self.storage.append((self.counter, str(item)))
+            self.counter += 1
 
 
 class TextProcessor(DataProcessor):
@@ -57,27 +56,29 @@ class TextProcessor(DataProcessor):
             raise ValueError("Improper text data")
         items = data if isinstance(data, list) else [data]
         for item in items:
-            self._storage.append((self._counter, item))
-            self._counter += 1
+            self.storage.append((self.counter, item))
+            self.counter += 1
 
 
 class LogProcessor(DataProcessor):
     def validate(self, data: Any) -> bool:
         if isinstance(data, dict):
-            return all(
+            items = [data]
+        elif isinstance(data, list):
+            items = data
+        else:
+            return False
+        for d in items:
+            if not isinstance(d, dict):
+                return False
+            if 'log_level' not in d or 'log_message' not in d:
+                return False
+            if not all(
                 isinstance(k, str) and isinstance(v, str)
-                for k, v in data.items()
-            )
-        if isinstance(data, list):
-            return all(
-                isinstance(d, dict)
-                and all(
-                    isinstance(k, str) and isinstance(v, str)
-                    for k, v in d.items()
-                )
-                for d in data
-            )
-        return False
+                for k, v in d.items()
+            ):
+                return False
+        return True
 
     def ingest(
         self, data: dict[str, str] | list[dict[str, str]]
@@ -87,8 +88,8 @@ class LogProcessor(DataProcessor):
         items = data if isinstance(data, list) else [data]
         for item in items:
             text = f"{item['log_level']}: {item['log_message']}"
-            self._storage.append((self._counter, text))
-            self._counter += 1
+            self.storage.append((self.counter, text))
+            self.counter += 1
 
 
 def main() -> None:
@@ -127,8 +128,8 @@ def main() -> None:
     print("Testing Log Processor...")
     log = LogProcessor()
     print(f" Trying to validate input 'Hello': {log.validate('Hello')}")
-    data_log = [{'log_level': 'NOTICE', 'log_message': 'Connection to server'}, {
-        'log_level': 'ERROR', 'log_message': 'Unauthorized access!!'}]
+    data_log = [{'log_level': 'NOTICE', 'log_message': 'Connection to server'},
+                {'log_level': 'ERROR', 'log_message': 'Unauthorized access!!'}]
     print(f" Processing data: {data_log}")
     log.ingest(data_log)
     print(" Extracting 2 values...")
