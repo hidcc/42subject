@@ -9,5 +9,5 @@ class Sproutling(Creature, HealCapability):
     def attack(self) -> str:
         return f"{self.name} uses Vine Whip!"
 
-    def heal(self, target: object | None = None):
+    def heal(self, target: object | None = None) -> str:
         return f"{self.name} heals itself for a small amount"

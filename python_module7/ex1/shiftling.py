@@ -4,7 +4,7 @@ from .capabilities import TransformCapability
 
 class Shiftling(Creature, TransformCapability):
     def __init__(self) -> None:
-        Creature.__init__(name="Shiftling", type_="Normal")
+        Creature.__init__(self, name="Shiftling", type_="Normal")
         TransformCapability.__init__(self)
 
     def attack(self) -> str:

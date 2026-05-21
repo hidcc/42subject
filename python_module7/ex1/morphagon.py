@@ -4,7 +4,7 @@ from .capabilities import TransformCapability
 
 class Morphagon(Creature, TransformCapability):
     def __init__(self) -> None:
-        Creature.__init__(name="Morphagon", type_="Normal/Dragon")
+        Creature.__init__(self, name="Morphagon", type_="Normal/Dragon")
         TransformCapability.__init__(self)
 
     def attack(self) -> str:
