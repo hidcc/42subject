@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from ex0 import Creature
+from ex0.creature import Creature
 
 
 class BattleStrategy(ABC):
@@ -13,3 +13,4 @@ class BattleStrategy(ABC):
 
 
 class InvalidStrategyError(Exception):
+    pass
