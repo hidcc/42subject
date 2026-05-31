@@ -7,3 +7,15 @@ RAW_DIR = ROOT / RAW_PREFIX
 
 CODE_EXTS = {".py"}
 DOCS_EXTS = {".md", ".rst", ".txt"}
+
+PROCESSED_DIR = ROOT / "data" / "processed"
+CHUNKS_DIR = PROCESSED_DIR / "chunks"
+INDEX_DIR = PROCESSED_DIR / "bm25_index"
+OUTPUT_DIR = ROOT / "data" / "output"
+
+MAX_CHUNK_SIZE = 2000
+OVERLAP = 200
+
+SKIP_DIRS = {".git", "__pycache__", ".github",
+             ".gemini", ".buildkite", "tests"}
+KINDS = {"code", "docs"}
