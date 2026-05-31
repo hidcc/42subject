@@ -1,0 +1,6 @@
+# 演習1（Loading Programs）の pip 依存リスト。
+# 有効化した仮想環境に次のコマンドでインストールする:
+#   pip install -r requirements.txt
+pandas>=2.1
+numpy>=1.26
+matplotlib>=3.8

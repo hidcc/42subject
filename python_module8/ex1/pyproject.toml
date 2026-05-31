@@ -1,0 +1,22 @@
+# 演習1（Loading Programs）の Poetry 依存定義。
+# 次のコマンドでインストールして実行する:
+#   poetry install
+#   poetry run python loading.py
+[tool.poetry]
+name = "loading"
+version = "0.1.0"
+description = "Matrix data analysis tool demonstrating Poetry vs pip."
+authors = ["hidenori <hidenoriaku@gmail.com>"]
+# 単一スクリプトでありインストール可能なライブラリではないため、
+# package モードを無効化する。下記の依存だけを Poetry に管理させる。
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pandas = "^2.1"
+numpy = "^1.26"
+matplotlib = "^3.8"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
