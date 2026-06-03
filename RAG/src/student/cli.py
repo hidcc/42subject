@@ -6,7 +6,7 @@ from .evaluation.recall import recall_at_k_on_dataset
 from .generation.llm import generate
 from .generation.prompt import SYSTEM_PROMPT, build_user_prompt
 from .ingestion.embed_indexer import build_embeddings
-from .ingestion.indexer import build_index
+from .ingestion.indexer import build_index, build_pdf_index
 from .models import (
     MinimalAnswer,
     MinimalSearchResults,
@@ -24,6 +24,15 @@ class CLI:
         """vLLMのソースを刻んで bm25s 索引を作る。"""
         build_index(max_chunk_size=max_chunk_size)
         print("Ingestion complete! Indices saved under data/processed/")
+
+    def index_pdf(
+        self,
+        pdf_path: str,
+        name: str = "pdf",
+        max_chunk_size: int = 2000,
+    ) -> None:
+        """PDF を取り込み kind=name の索引を作る（search/answer --kind name で利用）。"""
+        build_pdf_index(pdf_path, name, max_chunk_size=max_chunk_size)
 
     def index_embeddings(
         self,
@@ -209,3 +218,11 @@ class CLI:
         out_path = save_dir / path.name
         out_path.write_text(out.model_dump_json(indent=2), encoding="utf-8")
         print(f"Saved student_search_results_and_answer to {out_path}")
+
+    def serve(self, host: str = "127.0.0.1", port: int = 8000) -> None:
+        """FastAPI で RAG を HTTP 公開する（GET /health, /search, /answer）。"""
+        import uvicorn
+
+        from .api import app
+
+        uvicorn.run(app, host=host, port=port)

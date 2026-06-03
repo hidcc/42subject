@@ -114,6 +114,21 @@ hybrid are available as options (`search --method dense|hybrid`). Making dense
 competitive would need a code/domain-tuned embedding model and finer chunks — a
 clear next step.
 
+**Worked example** — query *"How do I enable prefix caching in vLLM?"*, top results:
+
+| Method | Top source(s) |
+|--------|---------------|
+| BM25   | `benchmarks/README.md` — the doc that carries the literal `--enable-prefix-caching` flag |
+| Dense  | `docs/features/automatic_prefix_caching.md`, `docs/design/prefix_caching.md` — the concept/design docs |
+| Hybrid | `automatic_prefix_caching.md` + `benchmarks/README.md` — keeps both the feature doc and the runnable-flag doc |
+
+BM25 matches the literal flag, dense matches the concept, and the hybrid fuses
+both. The Ollama (`qwen3:4b`) answer for this query:
+
+> To enable prefix caching in vLLM, use the `--enable-prefix-caching` flag … which
+> caches the KV cache of existing queries to reuse for queries sharing the same
+> prefix. *(Sources: benchmarks/README.md)*
+
 ## Design decisions
 
 - **BM25 over embeddings** — lighter, fast to build, strong on exact code tokens.
@@ -202,6 +217,65 @@ uv run python -m student answer "What environment variable selects the attention
 
 Tip: ask single-intent questions using vLLM-specific terms. Vague queries
 (e.g. "How to use OpenAI?") retrieve scattered context and yield weaker answers.
+
+### Bonus extensions usage
+
+These optional features sit on top of the core BM25 pipeline. **The mandatory
+commands (`index`, `search`, `search_dataset`, `evaluate`, `answer`,
+`answer_dataset`) need no Ollama and no GPU.** Install the extras only to use the
+bonus features:
+
+```bash
+uv sync --extra bonus    # adds qdrant-client, fastapi, uvicorn, pypdf
+```
+
+What needs Ollama, and what does not:
+
+| Command | Needs Ollama? |
+|---------|:-------------:|
+| `index`, `search` (bm25), `search_dataset`, `evaluate` | no |
+| `answer` (default `transformers` / Qwen3-0.6B), `index_pdf` | no |
+| `answer --backend ollama` | yes — generation |
+| `index_embeddings`, `search --method dense\|hybrid` | yes — embeddings |
+
+**On-prem / local generation via Ollama** (richer answers from a larger model):
+
+```bash
+# Requires: ollama pull qwen3:4b   (a local Ollama defaults to localhost:11434)
+uv run python -m student answer "How do I enable prefix caching in vLLM?" \
+  --backend ollama --model qwen3:4b --k 5
+# for an Ollama server on another machine: add --ollama_host http://<host>:11434
+```
+
+**Dense / hybrid retrieval** (Ollama `nomic-embed-text` + a local Qdrant DB):
+
+```bash
+# Requires: ollama pull nomic-embed-text
+uv run python -m student index_embeddings --kind both       # build the vector index once
+uv run python -m student search "How do I dynamically load a LoRA adapter?" \
+  --kind docs --method dense --k 5                          # or: --method hybrid
+```
+
+**HTTP API (FastAPI)** — exposes the pipeline over REST, with a Swagger UI at `/docs`:
+
+```bash
+# The Ollama host is read from OLLAMA_HOST (server-side, not the request) to avoid SSRF.
+OLLAMA_HOST=http://<host>:11434 make serve     # = uvicorn student.api:app on :8000
+# then, from another terminal or the browser:
+curl "http://127.0.0.1:8000/health"
+curl "http://127.0.0.1:8000/search?q=prefix+caching&kind=docs&method=hybrid&k=3"
+curl "http://127.0.0.1:8000/answer?q=How+to+enable+prefix+caching&backend=ollama"
+# interactive UI: http://127.0.0.1:8000/docs
+```
+
+**PDF ingestion** (diverse sources) — works with no Ollama (default backend):
+
+```bash
+# Extract + index any PDF under a label, then query it via --kind <label>
+uv run python -m student index_pdf --pdf_path "path/to/doc.pdf" --name mydoc
+uv run python -m student search "..." --kind mydoc --k 3
+uv run python -m student answer "..." --kind mydoc --k 5    # default Qwen3-0.6B, no Ollama
+```
 
 ## Resources
 

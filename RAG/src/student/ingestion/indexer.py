@@ -28,3 +28,28 @@ def build_index(max_chunk_size: int = config.MAX_CHUNK_SIZE) -> None:
         retriever.save(str(config.INDEX_DIR / kind))
 
         print(f"[{kind}] files-chunks={len(chunks)} saved")
+
+
+def build_pdf_index(
+    pdf_path: str,
+    name: str = "pdf",
+    max_chunk_size: int = config.MAX_CHUNK_SIZE,
+) -> None:
+    """PDF を抽出・チャンク化し、kind=name の BM25 索引として保存する。"""
+    from .pdf_loader import load_pdf_text
+
+    text = load_pdf_text(pdf_path)
+    chunks = chunk_file(text, pdf_path, "docs", max_chunk_size=max_chunk_size)
+    if not chunks:
+        print(f"[{name}] no text extracted from {pdf_path}")
+        return
+    config.CHUNKS_DIR.mkdir(parents=True, exist_ok=True)
+    config.INDEX_DIR.mkdir(parents=True, exist_ok=True)
+    with open(config.CHUNKS_DIR / f"{name}.jsonl", "w") as f:
+        for c in chunks:
+            f.write(c.model_dump_json() + "\n")
+    tokens = bm25s.tokenize([c.text for c in chunks], stopwords="en")
+    retriever = bm25s.BM25()
+    retriever.index(tokens)
+    retriever.save(str(config.INDEX_DIR / name))
+    print(f"[{name}] indexed PDF: {len(chunks)} chunks from {pdf_path}")

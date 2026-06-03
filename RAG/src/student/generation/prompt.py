@@ -15,11 +15,16 @@ SYSTEM_PROMPT = (
 
 
 def _read_span(source: MinimalSource) -> str:
-    """ソースを実ファイルから読み直す。"""
+    """ソースを実ファイルから読み直す（PDF は再抽出する）。"""
     path = config.ROOT / source.file_path
     try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+        if path.suffix.lower() == ".pdf":
+            from ..ingestion.pdf_loader import load_pdf_text
+
+            text = load_pdf_text(path)
+        else:
+            text = path.read_text(encoding="utf-8", errors="replace")
+    except Exception:
         return ""
     return text[source.first_character_index : source.last_character_index]
 

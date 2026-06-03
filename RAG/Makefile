@@ -19,9 +19,12 @@ format:
 	uv run ruff format src
 	uv run ruff check --fix src
 
+serve:
+	uv run uvicorn student.api:app --host 127.0.0.1 --port 8000
+
 clean:
 	rm -rf data/processed data/output
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	rm -rf .mypy_cache .ruff_cache
 
-.PHONY: install run debug lint lint-strict format clean
+.PHONY: install run debug serve lint lint-strict format clean
