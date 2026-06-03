@@ -12,10 +12,13 @@ PROCESSED_DIR = ROOT / "data" / "processed"
 CHUNKS_DIR = PROCESSED_DIR / "chunks"
 INDEX_DIR = PROCESSED_DIR / "bm25_index"
 OUTPUT_DIR = ROOT / "data" / "output"
+QDRANT_DIR = PROCESSED_DIR / "qdrant"
+
+EMBED_MODEL = "nomic-embed-text"
+DEFAULT_OLLAMA_HOST = "http://localhost:11434"
 
 MAX_CHUNK_SIZE = 2000
 OVERLAP = 200
 
-SKIP_DIRS = {".git", "__pycache__", ".github",
-             ".gemini", ".buildkite", "tests"}
+SKIP_DIRS = {".git", "__pycache__", ".github", ".gemini", ".buildkite", "tests"}
 KINDS = {"code", "docs"}

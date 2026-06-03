@@ -1,6 +1,9 @@
+import uuid
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+Kind = Literal["code", "docs"]
 
 
 class MinimalSource(BaseModel):
@@ -21,10 +24,12 @@ class MinimalAnswer(MinimalSearchResults):
 
 class StudentSearchResults(BaseModel):
     search_results: list[MinimalSearchResults]
+    k: int
 
 
-class StudentSearchResultsAndAnswer(BaseModel):
-    search_results: list[MinimalAnswer]
+class StudentSearchResultsAndAnswer(StudentSearchResults):
+    # 親の list[MinimalSearchResults] を list[MinimalAnswer] に絞る（subject 指定モデル）
+    search_results: list[MinimalAnswer]  # type: ignore[assignment]
 
 
 class Chunk(BaseModel):
@@ -33,7 +38,7 @@ class Chunk(BaseModel):
     first_character_index: int
     last_character_index: int
     text: str
-    kind: Literal["code", "docs"]
+    kind: Kind
 
     def to_source(self) -> MinimalSource:
         return MinimalSource(
@@ -41,3 +46,17 @@ class Chunk(BaseModel):
             first_character_index=self.first_character_index,
             last_character_index=self.last_character_index,
         )
+
+
+class UnansweredQuestion(BaseModel):
+    question_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    question: str
+
+
+class AnsweredQuestion(UnansweredQuestion):
+    sources: list[MinimalSource]
+    answer: str
+
+
+class RagDataset(BaseModel):
+    rag_questions: list[AnsweredQuestion | UnansweredQuestion]

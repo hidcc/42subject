@@ -1,6 +1,5 @@
-# 生成物
-data/processed/
-data/output/
+# データ（評価者が用意/生成。リポジトリに含めない: subject IX）
+data/
 
 # Python
 __pycache__/

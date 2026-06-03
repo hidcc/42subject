@@ -1,13 +1,27 @@
 install:
-	uv venv
+	uv sync --extra dev
+
+run:
+	uv run python -m student
+
+debug:
+	uv run python -m pdb -m student
+
 lint:
-	uv run ruff check src
-	uv run mypy src
+	uv run flake8 .
+	uv run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+
+lint-strict:
+	uv run flake8 .
+	uv run mypy . --strict
+
 format:
 	uv run ruff format src
 	uv run ruff check --fix src
+
 clean:
 	rm -rf data/processed data/output
 	find . -type d -name __pycache__ -exec rm -rf {} +
+	rm -rf .mypy_cache .ruff_cache
 
-.PHONY: install lint format clean
+.PHONY: install run debug lint lint-strict format clean

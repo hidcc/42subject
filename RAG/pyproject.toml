@@ -9,12 +9,19 @@ dependencies = [
     "bm25s>=0.2",
     "numpy",
     "tqdm",
+    "transformers>=4.51",
+    "torch>=2.2",
+    "accelerate>=0.30",
 ]
 
 [project.optional-dependencies]
 dev = [
     "mypy>=1.8",
     "ruff>=0.4",
+    "flake8>=7.0",
+]
+bonus = [
+    "qdrant-client>=1.7",
 ]
 
 [build-system]
@@ -35,3 +42,4 @@ select = ["E", "F", "I", "UP", "B"]
 python_version = "3.10"
 strict = true
 ignore_missing_imports = true
+exclude = ['^\.venv/', '^data/', '^build/', '^dist/']
