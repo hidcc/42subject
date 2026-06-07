@@ -1,13 +1,12 @@
-def artifact_sorter(artifacts: list[dict]) -> list[dict]:
-    artifacts.sort(key=lambda x: x['power'])
+from functools import wraps
 
 
-def power_filter(mages: list[dict], min_power: int) -> list[dict]
-def spell_transformer(spells: list[str]) -> list[str]
-def mage_stats(mages: list[dict]) -> dict
+def spell_timer(func: Callable) -> Callable
+def power_validator(min_power: int) -> Callable
+def retry_spell(max_attempts: int) -> Callable
 
 
-def main():
-
-
-__name__ == "__main__"
+class MageGuild:
+    @staticmethod
+    def validate_mage_name(name: str) -> bool
+    def cast_spell(self, spell_name: str, power: int) -> str
