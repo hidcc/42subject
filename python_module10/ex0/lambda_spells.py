@@ -11,14 +11,15 @@ def spell_transformer(spells: list[str]) -> list[str]:
 
 
 def mage_stats(mages: list[dict]) -> dict:
+    avg = sum(map(lambda m: m['power'], mages)) / len(mages)
     return {
         'max_power': max(mages, key=lambda m: m['power'])['power'],
         'min_power': min(mages, key=lambda m: m['power'])['power'],
-        'avg_power': sum(map(lambda m: m['power'], mages)) / len(mages),
+        'avg_power': round(avg, 2),
     }
 
 
-def main():
+def main() -> None:
     artifacts = [{'name': 'Storm Crown', 'power': 116, 'type': 'focus'},
                  {'name': 'Fire Staff', 'power': 111, 'type': 'weapon'},
                  {'name': 'Fire Staff', 'power': 81, 'type': 'accessory'},

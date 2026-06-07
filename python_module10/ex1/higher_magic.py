@@ -78,7 +78,7 @@ def main() -> None:
 
     print("\nTesting invalid spell rejection...")
     try:
-        spell_combiner("not a spell", heal)
+        spell_combiner("not a spell", heal)  # type: ignore[arg-type]
     except TypeError as error:
         print(f"Rejected: {error}")
 

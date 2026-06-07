@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 
 
 def mage_counter() -> Callable:
@@ -30,24 +31,22 @@ def enchantment_factory(enchantment_type: str) -> Callable:
 
 
 def memory_vault() -> dict[str, Callable]:
-    memories: dict = {}
+    memories: dict[str, Any] = {}
 
-    def store(key: str, value) -> None:
+    def store(key: str, value: Any) -> None:
         memories[key] = value
 
-    def recall(key: str):
+    def recall(key: str) -> Any:
         return memories.get(key, "Memory not found")
 
     return {"store": store, "recall": recall}
 
 
-initial_powers = [66, 53, 40]
-power_additions = [18, 16, 20, 11, 17]
-enchantment_types = ['Radiant', 'Windy', 'Dark']
-items_to_enchant = ['Sword', 'Ring', 'Amulet', 'Armor']
-
-
-def main():
+def main() -> None:
+    initial_powers = [66, 53, 40]
+    power_additions = [18, 16, 20, 11, 17]
+    enchantment_types = ['Radiant', 'Windy', 'Dark']
+    items_to_enchant = ['Sword', 'Ring', 'Amulet', 'Armor']
     print("Testing mage counter...")
     counter_a = mage_counter()
     counter_b = mage_counter()

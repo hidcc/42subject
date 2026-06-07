@@ -1,18 +1,22 @@
-from functools import reduce, partial, singledispatch
+from functools import reduce, partial, singledispatch, lru_cache
 from collections.abc import Callable
-import functools
 from typing import Any
+import operator
+
+OPS: dict[str, Callable[[int, int], int]] = {
+    'add': operator.add,
+    'multiply': operator.mul,
+    'max': max,
+    'min': min,
+}
 
 
 def spell_reducer(spells: list[int], operation: str) -> int:
-    if operation == 'add':
-        return reduce(lambda x, y: x + y, spells)
-    if operation == 'multiply':
-        return reduce(lambda x, y: x * y, spells)
-    if operation == 'max':
-        return reduce(lambda x, y: x if x > y else y, spells)
-    if operation == 'min':
-        return reduce(lambda x, y: x if x < y else y, spells)
+    if not spells:
+        return 0
+    if operation not in OPS:
+        raise ValueError(f"Unknown operation: {operation}")
+    return reduce(OPS[operation], spells)
 
 
 def partial_enchanter(base_enchantment: Callable) -> dict[str, Callable]:
@@ -27,7 +31,7 @@ def enchant(power: int, element: str, target: str) -> str:
     return f"{target} enchanted with {element} (power: {power})"
 
 
-@functools.cache
+@lru_cache(maxsize=None)
 def memorized_fibonacci(n: int) -> int:
     if n == 0:
         return 0
@@ -38,30 +42,27 @@ def memorized_fibonacci(n: int) -> int:
 
 def spell_dispatcher() -> Callable[[Any], str]:
     @singledispatch
-    def cast(arg):
-        return f"Unknown spell type"
+    def cast(arg: Any) -> str:
+        return "Unknown spell type"
 
     @cast.register(int)
-    def _(arg):
+    def _(arg: int) -> str:
         return f"Damage spell: {arg} damage"
 
     @cast.register(str)
-    def _(arg):
+    def _(arg: str) -> str:
         return f"Enchantment: {arg}"
 
     @cast.register(list)
-    def _(arg):
+    def _(arg: list[Any]) -> str:
         return f"Multi-cast: {len(arg)} spells"
 
     return cast
 
 
-spell_powers = [38, 16, 25, 12, 48, 37]
-operations = ['add', 'multiply', 'max', 'min']
-fibonacci_tests = [9, 12, 11]
-
-
-def main():
+def main() -> None:
+    spell_powers = [38, 16, 25, 12, 48, 37]
+    operations = ['add', 'multiply', 'max', 'min']
     print("Testing spell reducer...")
     for operation in operations:
         print(f"{operation}: {spell_reducer(spell_powers, operation)}")
