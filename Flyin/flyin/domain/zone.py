@@ -17,7 +17,7 @@ class ZoneType(Enum):
 
     def traversal_turns(self) -> int:
         """Return how many turns a move into this kind of zone takes."""
-        return 2 if ZoneType.RESTRICTED else 1
+        return 2 if self is ZoneType.RESTRICTED else 1
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,7 @@ class Zone:
     def __post_init__(self) -> None:
         """Validates invariants that hold regardless of input source."""
         if self.max_drones < 1:
-            raise ValueError(f"max_drons must be >= 1, got{self.max_drones}")
+            raise ValueError(f"max_drones must be >= 1, got {self.max_drones}")
 
     def capacity(self) -> int:
         """Return max drones allowed at once (start/end are unlimited)."""
