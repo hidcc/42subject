@@ -6,7 +6,7 @@ from .zone import Zone
 from .connection import Connection
 
 
-class Networkview(ABC):
+class NetworkView(ABC):
     """Read-only view of the network."""
 
     @abstractmethod
@@ -36,7 +36,7 @@ class Networkview(ABC):
         """Return the unique end zone."""
 
 
-class Network(Networkview):
+class Network(NetworkView):
     """Mutable network. Only the parser/builder adds to it."""
 
     def __init__(self) -> None:
