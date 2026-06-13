@@ -1,9 +1,9 @@
 install:
 	uv sync --extra dev
 run:
-	uv run python -m Fly-in $(MAP)
+	uv run python -m flyin $(MAP)
 debug:
-	uv eun python -m pdb -m Fly-in $(MAP)
+	uv run python -m pdb -m flyin $(MAP)
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	rm -rf .mypy_cache .pytest_cache
