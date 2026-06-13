@@ -52,7 +52,7 @@ class NetWork(NetWorkView):
         self._zones[zone.name] = zone
         self._adjencty[zone.name] = []
 
-    def add_connetion(self, connection: Connection):
+    def add_connetion(self, connection: Connection) -> None:
         """Register a connection between two already defined zones."""
         for endpoint in connection.a, connection.b:
             if endpoint not in self._zones:
