@@ -26,5 +26,5 @@ class Connection:
         if name == self.a:
             return self.b
         if name == self.b:
-            return self.b
-        raise ValueError(f"{name} is not an endpoint of{self.a}-{self.b}")
+            return self.a
+        raise ValueError(f"{name} is not an endpoint of {self.a}-{self.b}")
