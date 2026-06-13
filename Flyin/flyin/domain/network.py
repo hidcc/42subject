@@ -6,7 +6,7 @@ from .zone import Zone
 from .connection import Connection
 
 
-class NetWorkView(ABC):
+class Networkview(ABC):
     """Read-only view of the network."""
 
     @abstractmethod
@@ -36,23 +36,23 @@ class NetWorkView(ABC):
         """Return the unique end zone."""
 
 
-class NetWork(NetWorkView):
+class Network(Networkview):
     """Mutable network. Only the parser/builder adds to it."""
 
     def __init__(self) -> None:
         """Create an empty network."""
         self._zones: dict[str, Zone] = {}
         self._connections: dict[frozenset[str], Connection] = {}
-        self._adjencty: dict[str, list[str]] = {}
+        self._adjecency: dict[str, list[str]] = {}
 
     def add_zone(self, zone: Zone) -> None:
         "Register a zone. Raise if the name is already used."
         if zone.name in self._zones:
             raise ValueError(f"duplicate zone name {zone.name}")
         self._zones[zone.name] = zone
-        self._adjencty[zone.name] = []
+        self._adjecency[zone.name] = []
 
-    def add_connetion(self, connection: Connection) -> None:
+    def add_connection(self, connection: Connection) -> None:
         """Register a connection between two already defined zones."""
         for endpoint in connection.a, connection.b:
             if endpoint not in self._zones:
@@ -60,8 +60,8 @@ class NetWork(NetWorkView):
         if connection.key in self._connections:
             raise ValueError(f"duplicate connection: {connection.a}-{connection.b}")
         self._connections[connection.key] = connection
-        self._adjencty[connection.a].append(connection.b)
-        self._adjencty[connection.b].append(connection.a)
+        self._adjecency[connection.a].append(connection.b)
+        self._adjecency[connection.b].append(connection.a)
 
     def zones(self) -> Iterable[Zone]:
         """Return all zones in the network."""
@@ -75,7 +75,7 @@ class NetWork(NetWorkView):
 
     def neighbors(self, name: str) -> Iterable[Zone]:
         """Return the zones directly connected to the given name."""
-        return [self._zones[n] for n in self._adjencty[name]]
+        return [self._zones[n] for n in self._adjecency[name]]
 
     def connection(self, a: str, b: str) -> Connection:
         """Return the connection linking two zones."""
