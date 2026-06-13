@@ -1,7 +1,8 @@
-# Fly-in 設計書
+# Fly-in 設計書（抽象化主導版）
 
 > 本書は 42 課題「Fly-in」(Version 1.4) の仕様 PDF を元に作成した実装設計書である。
 > 目的: 複数ドローンを `start` ゾーンから `end` ゾーンへ、シミュレーションターン数最小で輸送するシステムを設計する。
+> 本版は **「コードの抽象化」を第一原理** として、インターフェース駆動・依存性逆転・差し替え可能性を軸に設計する。
 
 ---
 
@@ -13,105 +14,109 @@
 | Connection（接続） | ゾーン間の双方向エッジ |
 | Drone（ドローン） | start から end へ移動するエージェント |
 | Turn（ターン） | 離散的なシミュレーション単位時間 |
-| Move cost | 行き先ゾーン種別ごとの移動コスト（ターン数） |
+| Port | 外界とやり取りする抽象インターフェース（ABC / Protocol） |
+| Adapter | Port の具象実装 |
 
 ---
 
 ## 1. プロジェクト概要
 
-### 1.1 ゴール
-ゾーンの接続ネットワーク（グラフ）と制約集合が与えられたとき、`nb_drones` 機のドローンを
-`start` から `end` まで **最小ターン数** で全機輸送するシミュレータを実装する。
+ゾーンの接続ネットワークと制約集合が与えられたとき、`nb_drones` 機を
+`start` から `end` へ **最小ターン数** で全機輸送するシミュレータを実装する。
+本質は **容量・重み付きの多エージェント経路最適化問題**（42 lem-in の拡張）。
 
-本質的には **多エージェント経路探索 / フロー最適化問題**（42 の lem-in の拡張）であり、
-以下の追加要素を持つ:
-
-- 移動コストの重み付け（`restricted` = 2 ターン、`normal`/`priority` = 1 ターン）
-- ゾーン容量（`max_drones`）
-- 接続容量（`max_link_capacity`）
-- `restricted` ゾーンへの 2 ターン移動（途中は接続上に滞在）
-- 進入不可ゾーン（`blocked`）
-
-### 1.2 スコープ
-| 区分 | 内容 |
-|------|------|
-| 必須 | パーサ、シミュレーションエンジン、経路探索、可視化、規定フォーマット出力 |
-| ボーナス | 全提供マップで参照ターン目標を「完全達成」、Challenger マップで 45 ターン記録更新 |
+追加要素: 重み付き移動（`restricted`=2 ターン）、ゾーン容量（`max_drones`）、
+接続容量（`max_link_capacity`）、`restricted` への 2 ターン滞在、進入不可（`blocked`）。
 
 ---
 
-## 2. 制約（PDF Chapter V ほか）
+## 2. 抽象化の設計原則
 
-| # | 制約 | 設計上の対応 |
-|---|------|--------------|
-| C1 | グラフ系ライブラリ禁止（networkx, graphlib 等） | グラフ・探索・フローを自前実装 |
-| C2 | 完全に型安全（`flake8` + `mypy` 必須） | 全関数に型ヒント、`mypy --strict` を目標 |
-| C3 | 完全にオブジェクト指向 | 責務ごとにクラス分割、抽象基底で戦略を差し替え |
-| C4 | Python 3.10 以降 | `match` 文・`X | Y` 型union を活用 |
-| C5 | 例外を握りつぶさず graceful に処理 | `try/except` と context manager（ファイルは `with`） |
-| C6 | docstring（PEP 257 / Google or NumPy style） | 全公開クラス・関数に付与 |
-| C7 | Makefile / README.md / .gitignore | 別途整備（§12, §13） |
+### 2.1 指針
+本設計は以下を抽象化の物差しとする。**抽象は要件によって正当化されたときのみ導入** し、
+投機的抽象（YAGNI 違反）は避ける（§18 参照）。
+
+| 原則 | 本プロジェクトでの適用 |
+|------|------------------------|
+| **SRP**（単一責任） | 「解析」「経路計画」「移動判定」「描画」「出力整形」を別クラスに分離 |
+| **OCP**（開放閉鎖） | 新ゾーン種別・新探索戦略・新レンダラを **既存コード非改変** で追加（§13） |
+| **LSP**（置換可能） | 同一 Port のどの Adapter も差し替え可能（テストではフェイクに置換） |
+| **ISP**（インターフェース分離） | 読み取り専用 `NetworkView` と変更可能 `GraphBuilder` を分離 |
+| **DIP**（依存性逆転） | アプリ層（`SimulationEngine`）は具象でなく **Port にのみ依存**。具象は外部から注入 |
+
+### 2.2 各抽象を導入する根拠（要件トレース）
+| 抽象 | 正当化する仕様 |
+|------|----------------|
+| `PathPlanner`（経路戦略） | 「different maps may require different routing strategies」+ MVP→最適化の二段構え |
+| `CostModel`（コスト方策） | ゾーン種別ごとにコストが変わる／`priority` 優先など方策が変動 |
+| `Renderer`（描画） | 「terminal colors and/or graphical interface」= 複数実装が要件 |
+| `LineHandler`（行解析） | 5 種の行種別＋将来拡張。種別追加を OCP で吸収 |
+| `OccupancyRule`（占有規則） | ゾーン容量・接続容量・start/end 例外という独立規則の合成 |
+| `SimulationObserver`（観測者） | 描画・ログ・メトリクス収集をエンジンから分離 |
+
+> これらはいずれも「複数実装が存在する」「将来増える」「テストで差し替えたい」のいずれかを満たす。
+> 単一実装で増えないものは抽象化しない。
 
 ---
 
-## 3. 入力フォーマット仕様（パーサ要件）
+## 3. アーキテクチャ全体（ポート & アダプタ / ヘキサゴナル）
 
-### 3.1 例
-```text
-nb_drones: 5
+```mermaid
+flowchart TB
+    subgraph DRIVING["駆動側アダプタ"]
+        CLI[CLI / __main__]
+    end
 
-start_hub: hub 0 0 [color=green]
-end_hub: goal 10 10 [color=yellow]
-hub: roof1 3 4 [zone=restricted color=red]
-hub: roof2 6 2 [zone=normal color=blue]
-hub: corridorA 4 3 [zone=priority color=green max_drones=2]
-hub: tunnelB 7 4 [zone=normal color=red]
-hub: obstacleX 5 5 [zone=blocked color=gray]
-connection: hub-roof1
-connection: hub-corridorA
-connection: roof1-roof2
-connection: roof2-goal
-connection: corridorA-tunnelB [max_link_capacity=2]
-connection: tunnelB-goal
+    subgraph APP["アプリケーション層（Port にのみ依存）"]
+        UC[FlyInSimulationService]
+        ENG[SimulationEngine]
+    end
+
+    subgraph PORTS["ポート（抽象インターフェース）"]
+        P1[[MapParser]]
+        P2[[PathPlanner]]
+        P3[[CostModel]]
+        P4[[MovementPolicy]]
+        P5[[Renderer]]
+        P6[[TurnFormatter]]
+        P7[[SimulationObserver]]
+    end
+
+    subgraph DOMAIN["ドメイン層（純粋・無依存）"]
+        D1[Zone / Connection / Drone]
+        D2[Network / NetworkView]
+        D3[DroneState 状態機械]
+    end
+
+    subgraph DRIVEN["被駆動側アダプタ（具象）"]
+        A1[TextMapParser]
+        A2[FlowPathPlanner / DisjointPathPlanner]
+        A3[ZoneTypeCostModel]
+        A4[CapacityAwarePolicy]
+        A5[TerminalRenderer / GuiRenderer]
+        A6[StandardTurnFormatter]
+        A7[MetricsCollector]
+    end
+
+    CLI --> UC --> ENG
+    ENG -.depends on.-> PORTS
+    UC -.depends on.-> PORTS
+    PORTS --> DOMAIN
+    A1 -.implements.-> P1
+    A2 -.implements.-> P2
+    A3 -.implements.-> P3
+    A4 -.implements.-> P4
+    A5 -.implements.-> P5
+    A6 -.implements.-> P6
+    A7 -.implements.-> P7
 ```
 
-### 3.2 文法
-| 行種別 | 構文 |
-|--------|------|
-| ドローン数 | `nb_drones: <positive_integer>`（最初の有効行） |
-| 開始ゾーン | `start_hub: <name> <x> <y> [metadata]` |
-| 終了ゾーン | `end_hub: <name> <x> <y> [metadata]` |
-| 通常ゾーン | `hub: <name> <x> <y> [metadata]` |
-| 接続 | `connection: <name1>-<name2> [metadata]` |
-| コメント | `#` 以降は無視 |
-
-### 3.3 メタデータ（`[...]` 内、順不同・全て任意）
-**ゾーン:**
-- `zone=<type>`（既定 `normal`）— `normal` / `blocked` / `restricted` / `priority`
-- `color=<value>`（既定 none）— 単語文字列（許可リストなし）
-- `max_drones=<number>`（既定 `1`）— 同時占有可能数
-
-**接続:**
-- `max_link_capacity=<number>`（既定 `1`）— 同時通過可能数
-
-### 3.4 検証ルール（違反は行番号と原因を示してエラー停止）
-1. 最初の有効行は `nb_drones: <正整数>`。
-2. 任意のドローン数を扱えること。
-3. `start_hub` と `end_hub` はちょうど 1 つずつ。
-4. ゾーン名は一意、座標は整数。
-5. ゾーン名にダッシュ `-`・空白は使用不可。
-6. 接続は **定義済みゾーン同士のみ** をリンク。
-7. 同一接続の重複禁止（`a-b` と `b-a` は重複扱い）。
-8. メタデータブロックは構文的に妥当であること。
-9. ゾーン種別は 4 種のいずれか。不正値はパースエラー。
-10. 容量値（`max_drones`, `max_link_capacity`）は正整数。
-11. その他のパースエラーも行番号と原因を明示して停止。
-
-> ⚠️ 座標は常に整数、`start`/`end` は常に一意に存在する（前提保証あり）。
+**要点:** 中央（アプリ＋ドメイン）は具象を知らない。具象アダプタは Port を実装し、
+組み立て（依存注入）は最外周の **Composition Root**（`cli.py` / `bootstrap.py`）でのみ行う。
 
 ---
 
-## 4. ドメインモデル（クラス設計）
+## 4. ドメイン層（純粋・他に依存しない）
 
 ### 4.1 クラス図
 
@@ -123,8 +128,9 @@ classDiagram
         BLOCKED
         RESTRICTED
         PRIORITY
-        +move_cost() int
         +is_accessible() bool
+        +base_cost() int
+        +traversal_turns() int
     }
 
     class Zone {
@@ -136,7 +142,6 @@ classDiagram
         +int max_drones
         +bool is_start
         +bool is_end
-        +move_cost() int
         +capacity() int
     }
 
@@ -144,203 +149,367 @@ classDiagram
         +str a
         +str b
         +int max_link_capacity
-        +key() frozenset
+        +key() frozenset~str~
         +other(name) str
     }
 
-    class Graph {
-        +dict~str,Zone~ zones
-        +dict~str,list~ adjacency
-        +Zone start
-        +Zone end
+    class NetworkView {
+        <<interface>>
+        +zones() Iterable~Zone~
+        +neighbors(name) Iterable~Zone~
+        +connection(a, b) Connection
+        +start() Zone
+        +end() Zone
+    }
+
+    class Network {
         +add_zone(Zone)
         +add_connection(Connection)
-        +neighbors(name) list~Zone~
-        +connection(a, b) Connection
     }
 
-    class Drone {
-        +int id
-        +str position
-        +list~str~ path
-        +bool delivered
-        +Optional~Connection~ in_transit
-        +int transit_remaining
+    class DroneState {
+        <<interface>>
+        +advance(ctx) DroneState
+        +is_delivered() bool
+        +describe() str
     }
 
-    Graph "1" o-- "*" Zone
-    Graph "1" o-- "*" Connection
+    Network ..|> NetworkView
+    Network o-- Zone
+    Network o-- Connection
     Zone --> ZoneType
+    Drone --> DroneState
 ```
 
-### 4.2 各クラスの責務
+### 4.2 設計判断: ゾーン種別は「enum + 振る舞い」
+`ZoneType` を単なる定数でなく **振る舞いを持つ列挙**（`is_accessible()`, `traversal_turns()`）とする。
+種別ごとの分岐（`if zone_type == ...`）をクラス内に閉じ込め、呼び出し側を種別非依存に保つ
+（種別追加時の影響範囲を局所化＝OCP に寄与）。
+ただし「コストの数値方策」は変動要件のため `ZoneType` に固定せず `CostModel`（§9.2）へ委譲する。
 
-| クラス | 責務 |
-|--------|------|
-| `ZoneType`(Enum) | 種別と移動コスト・進入可否のマッピング |
-| `Zone` | ノードの属性保持、容量・コストの算出 |
-| `Connection` | エッジの属性保持、容量・端点解決 |
-| `Graph` | 隣接構造の保持と近傍照会（グラフ操作の単一窓口） |
-| `Drone` | エージェント状態（現在地 / 経路 / 配送済み / 移動中） |
+### 4.3 設計判断: 読み取り / 変更の分離（ISP）
+- `NetworkView`（読み取り専用 Port）: 経路探索・シミュレーションが依存。
+- `Network`（`NetworkView` を実装し変更操作を追加）: パーサ／ビルダのみが使用。
 
-### 4.3 移動コスト表（行き先ゾーン種別で決定）
+→ 経路探索器がグラフを破壊的変更できない構造を **型レベルで保証**。
 
-| 種別 | コスト | 備考 |
-|------|--------|------|
-| `normal` | 1 ターン | 既定 |
-| `priority` | 1 ターン | 経路探索で **優先** すべき |
-| `restricted` | 2 ターン | 途中 1 ターンは接続上に滞在 |
-| `blocked` | — | 進入不可。通る経路は無効 |
-
----
-
-## 5. システム・アーキテクチャ
-
-### 5.1 モジュール構成
-
-```text
-flyin/
-├── __main__.py              # エントリポイント（python -m flyin map.txt）
-├── cli.py                   # 引数解析・実行制御
-├── parser/
-│   ├── map_parser.py        # MapParser: テキスト → Graph
-│   └── errors.py            # ParseError(line, reason)
-├── model/
-│   ├── zone.py              # Zone, ZoneType
-│   ├── connection.py        # Connection
-│   ├── graph.py             # Graph
-│   └── drone.py             # Drone
-├── pathfinding/
-│   ├── strategy.py          # PathStrategy（抽象基底）
-│   ├── weighted_search.py   # 重み付き最短路（Dijkstra/SPFA）
-│   ├── flow_router.py       # 最小費用流による多経路割当
-│   └── allocator.py         # ドローンの経路割当（lem-in 分配）
-├── simulation/
-│   ├── engine.py            # SimulationEngine（ターン進行の統括）
-│   ├── state.py             # SimulationState（占有状況）
-│   └── scheduler.py         # MovementScheduler（同時移動の整合判定）
-├── visual/
-│   ├── renderer.py          # Renderer（抽象基底）
-│   └── terminal_renderer.py # 色付きターミナル出力
-└── output/
-    └── formatter.py         # ターン出力フォーマッタ
-```
-
-### 5.2 レイヤ依存（上が下に依存）
+### 4.4 設計判断: ドローン状態は State パターン
+ドローンの状態を `InZone` / `InTransit`（restricted 飛行中）/ `Delivered` の状態オブジェクトで表現。
+各状態が `advance()` で次状態を返す状態機械にし、`if in_transit:` 等の条件分岐を排除する。
 
 ```mermaid
-flowchart TD
-    CLI[cli / __main__] --> PARSE[parser]
-    CLI --> ROUTE[pathfinding]
-    CLI --> SIM[simulation]
-    CLI --> VIS[visual]
-    PARSE --> MODEL[model]
-    ROUTE --> MODEL
-    SIM --> MODEL
-    SIM --> OUT[output formatter]
-    VIS --> MODEL
+stateDiagram-v2
+    [*] --> InZone : start に出現
+    InZone --> InTransit : restricted へ進入（接続上）
+    InTransit --> InZone : 次ターンに到達（必須）
+    InZone --> InZone : 通常移動 / 待機
+    InZone --> Delivered : end 到達
+    Delivered --> [*]
 ```
-
-`model` は他に依存しない純粋ドメイン。`parser`/`pathfinding`/`simulation`/`visual` は `model` に依存する。
 
 ---
 
-## 6. 経路探索・スケジューリングアルゴリズム（中核）
+## 5. ポート（抽象インターフェース）カタログ
 
-### 6.1 問題の性質
-最小ターン数で N 機を運ぶ問題は、容量制約のないlem-inでは
-「複数の素な経路へドローンを分配する流量問題」に帰着する。本課題は
+各 Port は ABC（`abc.ABC` + `@abstractmethod`）または `typing.Protocol` で定義する。
+構造的型付けで十分なもの（`Renderer`, `SimulationObserver`）は `Protocol`、
+明示的継承を強制したいもの（`PathPlanner`, `MapParser`）は ABC とする。
 
-- 辺・頂点に **容量**（`max_link_capacity` / `max_drones`）
-- 種別ごとの **重み**（`restricted`=2）
-
-があるため、**容量付き・重み付きの最小費用流（min-cost flow）** が定式化として最も厳密。
-
-### 6.2 グラフ変換
-1. **頂点容量 → 辺容量**: 各ゾーン `v` を `v_in → v_out`（容量 = `max_drones`、`start`/`end` は ∞）に分割。
-2. **接続容量**: 双方向辺をそれぞれ容量 `max_link_capacity` の有向辺に。
-3. **重み**: 行き先ゾーン種別のコストを辺の費用に。`priority` は同コストだが探索時に優先選択するためのタイブレークを与える。
-4. `blocked` ゾーンは展開しない（不到達化）。
-
-### 6.3 段階的設計（MVP → 最適化）
-
-**段階1（MVP / 確実に動く）**
-- 重み付き BFS/Dijkstra で複数の経路候補を抽出（容量を消費しながら反復）。
-- lem-in 分配式でターン数を最小化（§6.4）。
-- ターンごとにシミュレーション実行（§7）。
-
-**段階2（最適化）**
-- 最小費用流（SPFA / Bellman–Ford ベースの successive shortest path）で
-  容量と重みを同時に最適化した経路集合を構築。
-- `restricted` の 2 ターン滞在は **時間展開グラフ**（time-expanded）で表現可能。
-
-### 6.4 ドローン分配（lem-in 分配式）
-素な経路集合 `{P_i}`（各長さ = 到達コスト `L_i`）に対し、経路 `i` に `k_i` 機を流すと
-完了は概ね `L_i + k_i − 1` ターン。`Σ k_i = N` のもとで `max_i(L_i + k_i − 1)` を最小化する。
-
-- **二分探索**: 目標 `T` ターンで経路 `i` が運べる数は `max(0, T − L_i + 1)`。
-  `Σ ≥ N` を満たす最小 `T` を二分探索。
-- 容量制約下では各ターンの流入量が `max_link_capacity` で頭打ちになる点を加味。
-
-### 6.5 戦略の差し替え（OOP / C3 対応）
 ```python
-class PathStrategy(ABC):
+class MapParser(ABC):
+    """マップ記述（テキスト）をドメインモデルへ変換する。"""
     @abstractmethod
-    def route(self, graph: Graph, nb_drones: int) -> list[DronePlan]: ...
+    def parse(self, source: MapSource) -> ParsedMap: ...
+
+class PathPlanner(ABC):
+    """ネットワークとドローン数から経路計画を生成する戦略。"""
+    @abstractmethod
+    def plan(self, view: NetworkView, nb_drones: int,
+             cost: CostModel) -> RoutingPlan: ...
+
+class CostModel(ABC):
+    """ゾーン/接続に対する移動コスト方策（priority 優先などを内包）。"""
+    @abstractmethod
+    def move_cost(self, dest: Zone) -> int: ...
+    @abstractmethod
+    def preference(self, dest: Zone) -> int: ...  # タイブレーク用
+
+class MovementPolicy(ABC):
+    """1 ターン分の希望移動を、容量規則に基づき確定移動へ解決する。"""
+    @abstractmethod
+    def resolve(self, intents: Sequence[MoveIntent],
+                state: SimulationState) -> list[Move]: ...
+
+class OccupancyRule(ABC):
+    """個々の占有/容量制約。Chain of Responsibility で合成される。"""
+    @abstractmethod
+    def permits(self, move: MoveIntent, state: SimulationState) -> bool: ...
+
+class Renderer(Protocol):
+    def render_turn(self, state: SimulationState, turn: int) -> None: ...
+
+class TurnFormatter(ABC):
+    """確定移動を規定の出力フォーマットへ整形する。"""
+    @abstractmethod
+    def format_turn(self, moves: Sequence[Move]) -> str: ...
+
+class SimulationObserver(Protocol):
+    def on_turn_completed(self, state: SimulationState, turn: int) -> None: ...
+    def on_finished(self, summary: SimulationSummary) -> None: ...
 ```
-`WeightedDisjointStrategy`（MVP）と `MinCostFlowStrategy`（最適化）を実装し、
-マップ規模・形状に応じて選択（PDF「different maps may require different routing strategies」に対応）。
+
+**データ転送オブジェクト（DTO / 値オブジェクト、不変）:**
+`ParsedMap`, `RoutingPlan`, `DronePlan`, `MoveIntent`, `Move`, `SimulationSummary`
+— いずれも `@dataclass(frozen=True)` とし、層間の契約を明示する。
 
 ---
 
-## 7. シミュレーションエンジン（ターン機構）
+## 6. アプリケーション層
 
-### 7.1 占有・容量ルール（PDF VII.2）
-- 既定: 1 ゾーン同時 1 機。`max_drones=N` で N 機。
-- `start`: 全機が初期共有可。`end`: 何機到着しても可（配送済み扱い）。
-- 同一接続を同時通過できるのは `max_link_capacity` 機まで。
-- 全容量制約を満たす限りドローンは **同時移動** 可。
+### 6.1 Composition Root（依存注入の唯一の場所）
+具象の選択と組み立ては `cli.py`（または `bootstrap.py`）に集約。
+それ以外のモジュールは `import` で具象を直接掴まない。
 
-### 7.2 1 ターンで各ドローンが取れる行動（PDF VII.3）
-1. 隣接ゾーンへ移動（容量が許せば）。
-2. `restricted` ゾーンへ向かう接続へ進入（2 ターン要）。
-   この場合 **次ターンに必ず目的地へ到達** しなければならず、接続上で余分に待てない。
-3. その場で待機。
-
-### 7.3 同時性の整合判定
-ターン状態を逐次評価し衝突を防ぐ:
-- あるターンに **退出する** ドローンはそのターンのうちに容量を解放する。
-- 移動先は（退出機が空けた後に）空き容量があること。
-- 接続容量も同時に検査。
-
-**判定アルゴリズム（1 ターン分）:**
-```
-1. 各ドローンの希望移動を収集（経路に基づく）
-2. 退出後のゾーン残容量・接続残容量を計算
-3. 容量超過する移動は保留（その機は待機）
-4. デッドロック回避: 進めない機は待機、巡回参照を検出
-5. 確定した移動を適用し、出力フォーマッタへ渡す
+```python
+def build_simulation(args: CliArgs) -> SimulationService:
+    parser:   MapParser   = TextMapParser()
+    cost:     CostModel    = ZoneTypeCostModel()
+    planner:  PathPlanner  = select_planner(args)        # Factory（§9.3）
+    policy:   MovementPolicy = CapacityAwarePolicy(default_rules())
+    renderer: Renderer     = renderer_for(args)          # Factory（§11）
+    formatter: TurnFormatter = StandardTurnFormatter()
+    observers = [renderer_observer(renderer), MetricsCollector()]
+    return SimulationService(parser, planner, cost, policy, formatter, observers)
 ```
 
-### 7.4 restricted 移動の状態遷移
+### 6.2 SimulationEngine（Template Method）
+ターン進行の骨格を基底に固定し、可変点（移動解決・観測通知）をフックに委譲する。
+
+```python
+class SimulationEngine:
+    def __init__(self, policy: MovementPolicy,
+                 formatter: TurnFormatter,
+                 observers: Sequence[SimulationObserver]) -> None: ...
+
+    def run(self, view: NetworkView, plan: RoutingPlan) -> SimulationSummary:
+        state = SimulationState.initial(view, plan)
+        turn = 0
+        while not state.all_delivered():
+            intents = self._collect_intents(state, plan)   # 計画→希望移動
+            moves = self.policy.resolve(intents, state)     # 容量規則で確定
+            state = state.apply(moves)                      # 不変更新
+            self.formatter.format_turn(moves)               # 規定出力
+            self._notify(state, turn)                       # Observer
+            turn += 1
+        return state.summarize()
 ```
-ターン t   : Drone は接続 a-R に進入 → 出力 "D<ID>-<a-R>"（飛行中）
-ターン t+1 : Drone は R へ到達       → 出力 "D<ID>-R"
-```
-飛行中は接続容量を 1 消費し続ける。途中ゾーン容量は消費しない。
+
+`run()` は具象アルゴリズムを一切持たず、注入された Port を呼ぶだけ（DIP の体現）。
 
 ---
 
-## 8. 出力フォーマット（PDF VII.5）
+## 7. パーサの抽象化（Registry + Builder + Factory）
 
-- 1 ターン = 1 行。
-- その行にはそのターンに発生した全移動を **スペース区切り** で列挙。
-- 各移動: `D<ID>-<zone>`、または restricted へ飛行中なら `D<ID>-<connection>`。
-- 動かなかった機はその行から省略。
-- `end` 到達機は配送済みとして以後追跡しない。
-- 全機到達でシミュレーション終了。
+### 7.1 行ハンドラのレジストリ
+行種別ごとに `LineHandler` を実装し、レジストリへ登録。新種別は実装＋登録のみで追加（OCP）。
 
-**例:**
+```python
+class LineHandler(ABC):
+    @abstractmethod
+    def matches(self, token: str) -> bool: ...
+    @abstractmethod
+    def handle(self, line: ParsedLine, builder: GraphBuilder) -> None: ...
+
+# 具象: NbDronesHandler, StartHubHandler, EndHubHandler,
+#       HubHandler, ConnectionHandler, CommentHandler
+```
+
+### 7.2 解析パイプライン
+```mermaid
+flowchart LR
+    SRC[MapSource] --> TOK[Tokenizer<br/>コメント除去/分割]
+    TOK --> DISP[HandlerRegistry<br/>種別ディスパッチ]
+    DISP --> BLD[GraphBuilder<br/>状態蓄積+検証]
+    BLD --> VAL[Validator<br/>整合チェック]
+    VAL --> PM[ParsedMap]
+```
+
+- `MetadataParser`: `[zone=... color=... max_drones=...]` を順不同で解釈（`ZoneFactory` が消費）。
+- `ZoneFactory`: トークン → `Zone` 生成（種別文字列 → `ZoneType` のマッピングを単一箇所に集約）。
+- `GraphBuilder`: 接続は「定義済みゾーン参照」を保証しつつ蓄積。
+- `Validator`: §3.4 の全検証ルールを `ValidationRule` の集合として適用。
+
+### 7.3 検証ルールの抽象化（Chain / Composite）
+```python
+class ValidationRule(ABC):
+    @abstractmethod
+    def check(self, draft: MapDraft) -> None:  # 違反時に ParseError 送出
+        ...
+# 例: UniqueZoneNames, SingleStartEnd, NoDuplicateConnection,
+#     ValidCoordinates, PositiveCapacities, KnownZoneType ...
+```
+各ルールが独立クラスなので、ルール単体テストが容易（抽象化の直接的利点）。
+
+### 7.4 エラー型
+```python
+class ParseError(Exception):
+    def __init__(self, line_no: int, reason: str) -> None: ...
+```
+行番号と原因を必ず保持し、メッセージを明確化（仕様: 行番号と原因を示して停止）。
+
+---
+
+## 8. ドメイン仕様（パーサ/シミュレータが満たすべき規則）
+
+### 8.1 入力フォーマット
+```text
+nb_drones: 5
+start_hub: hub 0 0 [color=green]
+end_hub: goal 10 10 [color=yellow]
+hub: roof1 3 4 [zone=restricted color=red]
+hub: corridorA 4 3 [zone=priority color=green max_drones=2]
+connection: hub-roof1
+connection: corridorA-tunnelB [max_link_capacity=2]
+```
+
+| 行 | 構文 |
+|----|------|
+| ドローン数 | `nb_drones: <正整数>`（最初の有効行） |
+| 開始 / 終了 | `start_hub: <name> <x> <y> [meta]` / `end_hub: ...` |
+| 通常ゾーン | `hub: <name> <x> <y> [meta]` |
+| 接続 | `connection: <name1>-<name2> [meta]` |
+| コメント | `#` 以降無視 |
+
+メタデータ（順不同・任意）: `zone=`（既定 normal）/ `color=`（既定 none）/
+`max_drones=`（既定 1）/ 接続は `max_link_capacity=`（既定 1）。
+
+### 8.2 検証ルール（§7.3 の各 `ValidationRule` に対応）
+1. 最初の有効行は `nb_drones: <正整数>`／任意数を扱える。
+2. `start_hub`・`end_hub` は各 1 つ。
+3. ゾーン名一意・座標整数・名前にダッシュ/空白不可。
+4. 接続は定義済みゾーン同士・重複禁止（`a-b`＝`b-a`）。
+5. 種別は 4 種のいずれか・容量は正整数・メタは構文妥当。
+6. 違反は行番号と原因を示して停止。
+
+### 8.3 移動コスト
+| 種別 | コスト | 備考 |
+|------|--------|------|
+| normal | 1 | 既定 |
+| priority | 1 | 探索で優先 |
+| restricted | 2 | 途中 1 ターン接続上 |
+| blocked | — | 進入不可 |
+
+### 8.4 占有・移動規則（VII.2 / VII.3）
+- 既定 1 機 / `max_drones=N` で N 機。`start` 共有可・`end` 無制限（配送済み）。
+- 接続同時通過は `max_link_capacity` 機まで。
+- 退出機は同ターンに容量解放 → 解放後に空きがあれば進入可。
+- 1 ターンの行動: 隣接移動 / restricted への進入（次ターン必着・接続で待てない）/ 待機。
+
+---
+
+## 9. 経路探索の抽象化
+
+### 9.1 戦略インターフェース（Strategy）
+`PathPlanner.plan()` が `RoutingPlan`（各ドローンの経路と発進タイミング）を返す。
+具象を 2 つ用意し、`PlannerSelector`（§9.3）で切替:
+
+| Adapter | 内容 | 段階 |
+|---------|------|------|
+| `DisjointPathPlanner` | 重み付き探索で素な経路を反復抽出＋lem-in 分配 | MVP |
+| `FlowPathPlanner` | 容量・重みを最小費用流で同時最適化（頂点分割・時間展開） | 最適化 |
+
+### 9.2 コスト方策（CostModel）
+コストを `ZoneType` に固定せず `CostModel` に外出し。
+`ZoneTypeCostModel` が `normal/priority=1, restricted=2` を返し、`priority` には高い `preference()` を付与。
+→ 「priority の優先度を調整したい」「実験的に重みを変えたい」を **アルゴリズム非改変** で吸収。
+
+### 9.3 戦略選択（Factory）
+```python
+def select_planner(args: CliArgs) -> PathPlanner:
+    if args.planner == "flow":
+        return FlowPathPlanner()
+    if args.planner == "auto":
+        return AdaptivePlanner(DisjointPathPlanner(), FlowPathPlanner())  # 規模で選択
+    return DisjointPathPlanner()
+```
+`AdaptivePlanner` はマップ規模・形状で内部戦略を選ぶ（仕様「マップ毎に戦略が異なりうる」に対応）。
+
+### 9.4 アルゴリズム核（実装メモ）
+- **頂点容量 → 辺容量**: `v_in→v_out`（容量 `max_drones`、start/end は ∞）。
+- **接続容量**: 双方向を容量 `max_link_capacity` の有向辺に。
+- **重み**: `CostModel.move_cost` を辺費用に。`blocked` は展開しない。
+- **分配（lem-in）**: 経路長 `L_i`、経路 i に `k_i` 機で完了 `≈ L_i + k_i − 1`。
+  目標ターン `T` で運べる数 `max(0, T − L_i + 1)`、`Σ ≥ N` を満たす最小 `T` を二分探索。
+- **restricted の 2 ターン滞在**: 時間展開グラフで接続占有を厳密表現。
+
+---
+
+## 10. シミュレーションの抽象化
+
+### 10.1 移動の表現（Command + 値オブジェクト）
+```python
+@dataclass(frozen=True)
+class MoveIntent:           # 「こう動きたい」希望
+    drone_id: int
+    target: Target          # Zone か Connection（restricted 飛行）
+
+@dataclass(frozen=True)
+class Move:                 # 「こう動いた」確定
+    drone_id: int
+    target: Target
+```
+
+### 10.2 占有規則の合成（Chain of Responsibility）
+`MovementPolicy.resolve()` は各 `MoveIntent` を `OccupancyRule` 群で検査し、
+全規則が許可した移動のみ確定。規則は独立クラスで合成・差し替え可能:
+
+| OccupancyRule | 検査内容 |
+|---------------|----------|
+| `ZoneCapacityRule` | 退出機解放後の `max_drones` 超過なし |
+| `LinkCapacityRule` | `max_link_capacity` 超過なし |
+| `BlockedZoneRule` | `blocked` 進入禁止 |
+| `RestrictedTransitRule` | 飛行中は接続で待てず次ターン必着 |
+| `StartEndExemptionRule` | start/end の容量例外 |
+
+### 10.3 状態の不変更新
+`SimulationState` は `apply(moves) -> SimulationState` で **新しい状態を返す**（不変）。
+これによりターン間の状態をスナップショットとして観測・テストしやすくする。
+
+### 10.4 1 ターンの流れ
+```mermaid
+sequenceDiagram
+    participant ENG as SimulationEngine
+    participant PLAN as RoutingPlan
+    participant POL as MovementPolicy
+    participant RULES as OccupancyRule[]
+    participant ST as SimulationState
+    participant OBS as Observer[]
+
+    ENG->>PLAN: collect intents(state)
+    PLAN-->>ENG: MoveIntent[]
+    ENG->>POL: resolve(intents, state)
+    POL->>RULES: permits(intent, state)?
+    RULES-->>POL: bool（全規則 AND）
+    POL-->>ENG: Move[]（確定）
+    ENG->>ST: apply(moves) → new state
+    ENG->>OBS: on_turn_completed(state, turn)
+```
+
+---
+
+## 11. 可視化・出力の抽象化（Observer + Strategy）
+
+- 描画は **エンジンから完全分離**: `Renderer` を `SimulationObserver` でラップし、
+  `on_turn_completed` で各ターンを描画。エンジンは描画の存在を知らない。
+- 具象: `TerminalRenderer`（ANSI カラー、ゾーン `color=`・種別・ドローン位置・凡例）、
+  将来の `GuiRenderer`（任意）。`NullRenderer` でヘッドレス実行。
+- 出力整形は `TurnFormatter`（規定フォーマット）として独立。描画と出力を混ぜない。
+
+### 11.1 規定出力フォーマット（VII.5）
+- 1 ターン = 1 行、移動をスペース区切り。
+- 各移動 `D<ID>-<zone>`、restricted 飛行中は `D<ID>-<connection>`。
+- 非移動機は省略。end 到達機は以後追跡せず。全機到達で終了。
+
 ```text
 D1-roof1 D2-corridorA
 D1-roof2 D2-tunnelB
@@ -349,159 +518,158 @@ D1-goal D2-goal
 
 ---
 
-## 9. 可視化（PDF VII.1 / Visual Representation）
+## 12. デザインパターン対応表
 
-必須要件として、以下のいずれかで視覚的フィードバックを提供:
-- **色付きターミナル出力**: ゾーンの色（`color=` 指定）・状態・各ターンのドローン位置を表示。
-- グラフィカル UI（任意）。
+| パターン | 適用箇所 | 解決する課題 |
+|----------|----------|--------------|
+| Strategy | `PathPlanner`, `CostModel`, `MovementPolicy` | アルゴリズム/方策の差し替え |
+| Factory | `select_planner`, `ZoneFactory`, `renderer_for` | 具象生成の局所化 |
+| Template Method | `SimulationEngine.run` | 進行骨格固定＋可変点フック化 |
+| State | `DroneState`（InZone/InTransit/Delivered） | 状態分岐の排除 |
+| Command / 値オブジェクト | `MoveIntent` / `Move` | 移動の表現と検査の分離 |
+| Chain of Responsibility | `OccupancyRule` 群 | 占有規則の独立合成 |
+| Observer | `SimulationObserver`（描画/メトリクス） | 横断的関心の分離 |
+| Registry | `LineHandler` 群 | 行種別の OCP 追加 |
+| Builder | `GraphBuilder` | 段階的なグラフ構築と検証 |
+| Adapter（Hexagonal） | 全 Port の具象 | I/O・描画・探索の交換可能化 |
 
-設計:
-```python
-class Renderer(ABC):
-    @abstractmethod
-    def render_turn(self, state: SimulationState, turn: int) -> None: ...
+---
+
+## 13. 拡張シナリオ（OCP の実証）
+
+抽象設計の価値は「新要件を **既存コード非改変** で足せること」。代表シナリオ:
+
+| 新要件 | 追加するもの | 変更不要なもの |
+|--------|--------------|----------------|
+| 新ゾーン種別（例 `slow`=3 ターン） | `ZoneType` メンバ＋`CostModel` 1 行 | エンジン・探索・描画 |
+| 新経路アルゴリズム | `PathPlanner` 実装 1 つ＋`select_planner` 分岐 | エンジン・出力 |
+| GUI 描画 | `GuiRenderer`（`Renderer` 実装） | エンジン・出力（Observer 経由） |
+| 新メタデータ | `MetadataParser` のキー追加＋対応 `ValidationRule` | 他の行ハンドラ |
+| 出力フォーマット変更 | `TurnFormatter` 実装差し替え | シミュレーション本体 |
+| メトリクス追加 | `SimulationObserver` 実装追加 | エンジン本体 |
+
+---
+
+## 14. ディレクトリ構成（層と抽象に対応）
+
+```text
+flyin/
+├── __main__.py              # エントリポイント
+├── cli.py                   # Composition Root（DI 組み立て）
+├── domain/                  # 純粋ドメイン（無依存）
+│   ├── zone.py              # Zone, ZoneType
+│   ├── connection.py        # Connection
+│   ├── network.py           # Network, NetworkView(Protocol)
+│   ├── drone.py             # Drone, DroneState(+具象状態)
+│   └── dto.py               # ParsedMap, RoutingPlan, Move ...(frozen)
+├── ports/                   # 抽象インターフェース（ABC/Protocol）
+│   ├── parser.py            # MapParser
+│   ├── planner.py           # PathPlanner, CostModel
+│   ├── policy.py            # MovementPolicy, OccupancyRule
+│   ├── renderer.py          # Renderer, SimulationObserver
+│   └── formatter.py         # TurnFormatter
+├── adapters/                # 具象実装
+│   ├── parsing/             # TextMapParser, LineHandler 群, ZoneFactory,
+│   │                        #   MetadataParser, ValidationRule 群, ParseError
+│   ├── planning/            # DisjointPathPlanner, FlowPathPlanner,
+│   │                        #   AdaptivePlanner, ZoneTypeCostModel
+│   ├── policy/              # CapacityAwarePolicy, OccupancyRule 群
+│   ├── rendering/           # TerminalRenderer, NullRenderer
+│   └── output/              # StandardTurnFormatter, MetricsCollector
+└── application/             # アプリ層
+    ├── engine.py            # SimulationEngine, SimulationState
+    └── service.py           # FlyInSimulationService
 ```
-- `TerminalRenderer`: ANSI カラーでゾーン種別/色を着色、凡例を表示。
-- 色未指定ゾーンは既定表示。`blocked` は明示的に区別。
+
+依存方向: `adapters → ports → domain`、`application → ports → domain`。
+**domain は何にも依存しない**（依存性逆転の頂点）。
 
 ---
 
-## 10. スコアリングと性能目標（PDF VII.6 / VII.7）
+## 15. 型安全とエラー処理（抽象を型で担保）
 
-### 10.1 主指標
-全ドローンを start → end へ運ぶ **総ターン数**（少ないほど良い）。
-
-有効なシミュレーションの条件:
-- 全移動・占有ルールに準拠
-- ゾーン種別の移動コストを正しく処理
-- 全容量制約（ゾーン・接続）を遵守
-- 全ての衝突を回避
-
-### 10.2 副指標（任意・出力やドキュメントで提示推奨）
-- 1 ターンあたり移動機数（経路割当の効率）
-- 1 機あたり平均ターン数
-- 総経路コスト（重み付き移動コストの総和）
-
-### 10.3 性能ベンチマーク
-
-| 難度 | マップ | 目標 |
-|------|--------|------|
-| Easy | Linear path (2 drones) | ≤ 6 turns |
-| Easy | Simple fork (4 drones) | ≤ 8 turns |
-| Easy | Basic capacity (4 drones) | ≤ 6 turns |
-| Medium | Dead end trap (5 drones) | ≤ 12 turns |
-| Medium | Circular loop (6 drones) | ≤ 15 turns |
-| Medium | Priority puzzle (5 drones) | ≤ 12 turns |
-| Hard | Maze nightmare (8 drones) | ≤ 30 turns |
-| Hard | Capacity hell (12 drones) | ≤ 35 turns |
-| Hard | Ultimate challenge (15 drones) | ≤ 45 turns |
-| Challenger（任意） | The Impossible Dream (25 drones) | 参照記録 45 turns を更新 |
-
-一般目標: Easy < 10、Medium 10–30、Hard < 60 ターン。
-
----
-
-## 11. エラーハンドリング方針
-
-| 場面 | 方針 |
+| 項目 | 方針 |
 |------|------|
-| ファイル I/O | `with open(...)` で context manager 管理（C5） |
-| パースエラー | `ParseError(line_no, reason)` を送出、明確なメッセージで停止 |
-| 不正な実行時状態 | 例外で握りつぶさず、原因を提示 |
-| レビュー時クラッシュ | 「非機能」と見なされるため、未捕捉例外を排除 |
+| 型ヒント | 全関数引数・戻り値・変数。Port は ABC/Protocol で契約を型として明示 |
+| mypy | `make lint`（規定フラグ）通過、`mypy --strict` を到達目標 |
+| 不変 DTO | `@dataclass(frozen=True)` で層間契約の改変を防止 |
+| ファイル I/O | `with open(...)`（context manager）でリーク防止 |
+| 例外 | `ParseError`(行番号+原因)、未捕捉例外を排除（レビュー時クラッシュ＝非機能） |
+| docstring | 全公開クラス/関数に PEP 257（Google/NumPy style） |
 
 ---
 
-## 12. テスト戦略（PDF III.3）
+## 16. テスト戦略（抽象化の直接的恩恵）
 
-`pytest`（または `unittest`）で機能検証（提出・採点対象外だが品質担保に必須）。
+Port を介すため、各層を **フェイク/スタブ差し替え** で単体テスト可能。
 
-| 対象 | 観点 |
-|------|------|
-| パーサ | 正常系 / 各検証ルール違反 / メタデータ順不同 / コメント / 重複接続 |
-| グラフ | 隣接構築 / 近傍照会 / blocked 除外 |
-| 経路探索 | 最短性 / priority 優先 / 容量消費 / 分配式の正しさ |
-| シミュレーション | 占有・接続容量 / restricted 2 ターン遷移 / 同時移動整合 / デッドロック回避 |
-| 出力 | フォーマット準拠 / 終了条件 |
-| ベンチマーク | 各提供マップで目標ターン以内 |
+| 対象 | テスト手法 |
+|------|-----------|
+| 各 `ValidationRule` | ルール単体で違反/正常を検証 |
+| `LineHandler` | 行単位でビルダ状態の変化を検証 |
+| `PathPlanner` | 固定 `NetworkView` フェイクで最短性・分配・priority 優先を検証 |
+| `MovementPolicy`/`OccupancyRule` | 合成状態に対し許可/拒否を検証 |
+| `SimulationEngine` | フェイク `PathPlanner`＋スパイ `Observer` で進行を検証 |
+| `TurnFormatter` | 確定 `Move[]` → 文字列のスナップショット |
+| ベンチマーク | 提供マップで目標ターン以内（§17 表） |
 
-> 推奨: 提供マップに加え、エッジケース・エラー処理用の自作マップを用意。
-
----
-
-## 13. ツール・ビルド（PDF III.2）
-
-### 13.1 Makefile ルール
-| ルール | 内容 |
-|--------|------|
-| `install` | 依存導入（`uv sync` 等） |
-| `run` | メインスクリプト実行（`uv run python -m flyin <map>`） |
-| `debug` | `pdb` でデバッグ実行 |
-| `clean` | `__pycache__`, `.mypy_cache` 等の削除 |
-| `lint` | `flake8 .` と `mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs` |
-| `lint-strict`（任意） | `flake8 .` と `mypy . --strict` |
-
-> 現状の `Makefile` は `run`/`debug`/`clean` のターゲット本体が未完（`uv eun` の誤記、対象未指定）。実装時に修正する。
-
-### 13.2 .gitignore
-Python アーティファクト（`__pycache__/`, `*.pyc`, `.mypy_cache/`, `.venv/` 等）を除外。
+`pytest`（または `unittest`）。提供マップに加えエッジ/エラー処理用の自作マップを用意。
 
 ---
 
-## 14. README 要件（PDF Chapter VIII）
-
-ルートの `README.md`（英語）に最低限以下を含める:
-1. 1 行目（イタリック）: *This project has been created as part of the 42 curriculum by <login>.*
-2. **Description**: 目的と概要。
-3. **Instructions**: コンパイル / インストール / 実行方法。
-4. **Resources**: 参考文献、および **AI をどのタスク・どの部分に使ったか** の明記。
-5. アルゴリズム選択と実装戦略の詳細説明。
-6. 可視化機能の説明とそれが UX をどう向上させるか。
-
----
-
-## 15. 実装ロードマップ（推奨順序）
+## 17. 実装ロードマップと性能目標
 
 ```mermaid
 flowchart LR
-    A["1. model<br/>Zone/Connection/Graph/Drone"]
-    B["2. parser<br/>MapParser + 検証"]
-    C["3. pathfinding<br/>MVP: 重み付き探索+分配"]
-    D["4. simulation<br/>ターン機構+容量"]
-    E["5. output<br/>規定フォーマット"]
-    F["6. visual<br/>色付き出力"]
-    G["7. tests<br/>+ ベンチマーク検証"]
-    H["8. 最適化<br/>min-cost flow / 時間展開"]
-    A --> B --> C --> D --> E --> F --> G --> H
+    A["1. domain<br/>純粋モデル+状態機械"]
+    B["2. ports<br/>抽象定義"]
+    C["3. parsing adapters<br/>Handler/Builder/Validator"]
+    D["4. planning(MVP)<br/>DisjointPathPlanner"]
+    E["5. application<br/>Engine+State+Policy"]
+    F["6. output/rendering<br/>Formatter+Terminal"]
+    G["7. tests+benchmark"]
+    H["8. FlowPathPlanner<br/>最小費用流/時間展開"]
+    A-->B-->C-->D-->E-->F-->G-->H
 ```
 
-| 段階 | 完了条件（検証エビデンス） |
-|------|---------------------------|
-| 1–2 | 提供マップを正しく Graph 化、検証ルール全件テスト緑 |
-| 3–5 | Easy マップで規定フォーマット出力・目標ターン以内 |
-| 6 | 色付き出力でゾーン状態とドローン移動が確認可能 |
-| 7 | Medium/Hard ベンチマーク達成、`make lint` 通過 |
-| 8（任意） | 全マップ「完全達成」、Challenger 45 ターン更新に挑戦 |
-
----
-
-## 16. 主要な設計判断と理由
-
-| 判断 | 理由 |
+| 難度 | 目標 |
 |------|------|
-| グラフ・フローを自前実装 | C1（ライブラリ禁止）。隣接リスト + 自前 Dijkstra/最小費用流 |
-| 頂点分割で容量を辺に集約 | `max_drones` を標準的なフロー問題に帰着でき、実装と検証が容易 |
-| `PathStrategy` の抽象化 | C3（OOP）+ マップ依存の戦略切替要件に対応 |
-| MVP→最適化の二段構え | まず全制約準拠の正しい解を出し、その後ターン数を削る（評価のリスク最小化） |
-| 時間展開による restricted 表現 | 2 ターン滞在・接続占有を時間軸で厳密にモデル化できる |
+| Easy（Linear/Fork/Capacity） | ≤ 6 / ≤ 8 / ≤ 6 turns（全体 < 10） |
+| Medium（Dead end/Loop/Priority） | ≤ 12 / ≤ 15 / ≤ 12 turns（10–30） |
+| Hard（Maze/Capacity hell/Ultimate） | ≤ 30 / ≤ 35 / ≤ 45 turns（< 60） |
+| Challenger（任意 Impossible Dream 25機） | 参照記録 45 turns を更新 |
 
 ---
 
-## 17. 未確定事項 / 確認ポイント
+## 18. 過剰抽象化の回避指針
 
-実装着手前に以下を確定させる:
-1. **接続名の出力表記**: restricted へ飛行中の `D<ID>-<connection>` で、接続名をどう文字列化するか
-   （端点から `name1-name2` 形式を生成する想定だが、評価マップの期待に合わせる）。
-2. 可視化を **ターミナルのみ** とするか **GUI も** 用意するか（採点・工数次第）。
-3. 最適化段階（min-cost flow / 時間展開）をどこまで実装するか（ボーナス到達目標との兼ね合い）。
-4. `priority` ゾーンの「優先」の厳密な解釈（同コスト時のタイブレーク強度）。
+抽象化は手段であって目的ではない。本設計では以下を **意図的に抽象化しない**:
+
+- **単一実装で増えないもの**: `Tokenizer`、座標などは具象クラスで十分（Port 化しない）。
+- **ドメイン値オブジェクト**: `Zone`/`Connection` はインターフェース化せず素直な `dataclass`。
+- **1 箇所でしか使わないヘルパ**: モジュール関数で済ます。
+
+判定基準（いずれかを満たすときのみ Port 化）:
+1. 複数の具象実装が現に存在する／確実に増える（探索戦略・描画）。
+2. テストで差し替えたい外部 I/O（パーサ入力・描画・出力）。
+3. 仕様が明示的に可変性を要求している（戦略・色/GUI）。
+
+---
+
+## 19. 未確定事項 / 確認ポイント
+
+1. **接続名の出力表記**: restricted 飛行中 `D<ID>-<connection>` の接続名文字列化規則
+   （`name1-name2` 形式を想定。評価マップの期待に合わせる）。
+2. **可視化の範囲**: ターミナルのみ / GUI も（`Renderer` の具象数）。
+3. **最適化の到達点**: `FlowPathPlanner`／時間展開をどこまで実装するか（ボーナス目標との兼ね合い）。
+4. **priority のタイブレーク強度**: `CostModel.preference()` の重み設計。
+5. **Port の実装方式**: ABC と Protocol の使い分け方針の最終確定（§5 の提案でよいか）。
+
+---
+
+## 付録: 既存 Makefile の修正点
+
+現状の `Makefile` は本設計の前に整備が必要:
+- `run` / `debug` / `clean` のターゲット本体が未完（対象未指定）。
+- `debug` 行の `uv eun`（`uv run` の誤記）。
+- 実装後、`run` は `uv run python -m flyin <map>`、`clean` は `__pycache__`/`.mypy_cache` 削除に修正。
